@@ -65,13 +65,19 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
   if(pcdHandle->Instance==USB1_OTG_HS)
   {
   /* USER CODE BEGIN USB1_OTG_HS_MspInit 0 */
-
+  /* From Lib/screenl: wait for VDD33USB, set PHY FSEL to 24 MHz before PHY clock */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  HAL_PWREx_EnableVddUSBVMEN();
+  while (__HAL_PWR_GET_FLAG(PWR_FLAG_USB33RDY) == 0U);
+  __HAL_RCC_USB1_OTG_HS_CLK_ENABLE();
+  USB1_HS_PHYC->USBPHYC_CR &= ~(0x7U << 0x4U);
+  USB1_HS_PHYC->USBPHYC_CR |= (0x2U << 0x4U);
   /* USER CODE END USB1_OTG_HS_MspInit 0 */
 
   /** Initializes the peripherals clock
   */
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USBOTGHS1|RCC_PERIPHCLK_USBPHY1;
-    PeriphClkInitStruct.UsbPhy1ClockSelection = RCC_USBPHY1CLKSOURCE_HSE_DIRECT;
+    PeriphClkInitStruct.UsbPhy1ClockSelection = RCC_USBPHY1CLKSOURCE_HSE_DIV2;
     PeriphClkInitStruct.UsbOtgHs1ClockSelection = RCC_USBOTGHS1CLKSOURCE_OTGPHY1;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
     {
@@ -85,10 +91,12 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
     __HAL_RCC_USB1_OTG_HS_PHY_CLK_ENABLE();
 
     /* USB1_OTG_HS interrupt Init */
-    HAL_NVIC_SetPriority(USB1_OTG_HS_IRQn, 1, 0);
+    HAL_NVIC_SetPriority(USB1_OTG_HS_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(USB1_OTG_HS_IRQn);
   /* USER CODE BEGIN USB1_OTG_HS_MspInit 1 */
-
+  __HAL_RCC_PWR_CLK_SLEEP_ENABLE();
+  __HAL_RCC_USB1_OTG_HS_CLK_SLEEP_ENABLE();
+  __HAL_RCC_USB1_OTG_HS_PHY_CLK_SLEEP_ENABLE();
   /* USER CODE END USB1_OTG_HS_MspInit 1 */
   }
 }

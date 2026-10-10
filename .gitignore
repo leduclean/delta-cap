@@ -2,3 +2,5 @@ build/
 FSBL/build/
 .cache/
 FSBL/.cache/
+compile_commands.json
+*.metadata

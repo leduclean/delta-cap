@@ -30,7 +30,7 @@ set(STM32_LINKER_SCRIPT STM32N657XX_AXISRAM2_fsbl.ld)
 set(STM32_LINKER_OPTION  )
 
 # Set the project name
-set(CMAKE_PROJECT_NAME NucleoN6_Console_UVC_USBX_Camera_FSBL)
+set(CMAKE_PROJECT_NAME Delta_FSBL)
 project(${CMAKE_PROJECT_NAME})
 
 # Create an executable object type
@@ -44,7 +44,7 @@ include("mx-generated.cmake")
 set(CMAKE_CXX_COMPILER_FORCED "true")
 
 
-add_compile_definitions(UX_STANDALONE USE_FULL_ASSERT)
+add_compile_definitions(USE_FULL_ASSERT)
 add_subdirectory(../Lib ${CMAKE_BINARY_DIR}/Lib)
 add_subdirectory(User)
 

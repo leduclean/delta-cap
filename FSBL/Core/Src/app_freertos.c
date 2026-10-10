@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-int Task_Demo_Console_Display_Camera_Start(void);
+int app_start(void);
 
 /* USER CODE END Includes */
 
@@ -79,7 +79,7 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  Task_Demo_Console_Display_Camera_Start();
+  app_start();
 
   /* USER CODE END RTOS_THREADS */
 

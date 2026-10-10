@@ -12,7 +12,7 @@ include(ExternalProject)
 set(CMAKE_CXX_COMPILER_FORCED "true")
 
 # Set the project name
-set(CMAKE_PROJECT_NAME NucleoN6_Console_UVC_USBX_Camera)
+set(CMAKE_PROJECT_NAME Delta)
 
 # Core project settings
 project(${CMAKE_PROJECT_NAME})

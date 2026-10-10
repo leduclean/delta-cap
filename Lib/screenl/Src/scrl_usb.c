@@ -514,40 +514,6 @@ int SRCL_Update(void)
   return ret;
 }
 
-void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
-{
-  assert(hpcd == &uvcl_pcd_handle);
-  assert(hpcd->Instance == USB1_OTG_HS);
-
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_RCC_PWR_CLK_SLEEP_ENABLE();
-
-  /* Enable the VDD33USB independent USB 33 voltage monitor */
-  HAL_PWREx_EnableVddUSBVMEN();
-
-  /* Wait until VDD33USB is ready */
-  while (__HAL_PWR_GET_FLAG(PWR_FLAG_USB33RDY) == 0U);
-
-  /* Enable VDDUSB supply */
-  HAL_PWREx_EnableVddUSB();
-
-  /* Enable USB1 OTG clock */
-  __HAL_RCC_USB1_OTG_HS_CLK_ENABLE();
-  __HAL_RCC_USB1_OTG_HS_CLK_SLEEP_ENABLE();
-
-  /* Set FSEL to 24 Mhz */
-  USB1_HS_PHYC->USBPHYC_CR &= ~(0x7U << 0x4U);
-  USB1_HS_PHYC->USBPHYC_CR |= (0x2U << 0x4U);
-
-  /* Enable USB1 OTG PHY clock */
-  __HAL_RCC_USB1_OTG_HS_PHY_CLK_ENABLE();
-  __HAL_RCC_USB1_OTG_HS_PHY_CLK_SLEEP_ENABLE();
-
-  HAL_NVIC_SetPriority(USB1_OTG_HS_IRQn, 6U, 0U);
-
-  /* Enable USB OTG interrupt */
-  HAL_NVIC_EnableIRQ(USB1_OTG_HS_IRQn);
-}
 
 void USB1_OTG_HS_IRQHandler(void)
 {

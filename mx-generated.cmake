@@ -3,7 +3,7 @@ set(ST_MULTICONTEXT BOOT_FLASH CACHE STRING "Type of multi-context")
 #-----------------------Build FSBL Project-----------------------#
 if((${BUILD_CONTEXT} MATCHES .*FSBL.*) OR (NOT DEFINED BUILD_CONTEXT))
     message("   Build context: " FSBL)
-    ExternalProject_Add(Delta
+    ExternalProject_Add(Delta_FSBL
         BINARY_DIR                  ${CMAKE_SOURCE_DIR}/FSBL/build
         SOURCE_DIR                  ${PROJECT_SOURCE_DIR}/FSBL
         PREFIX                      FSBL
@@ -13,7 +13,7 @@ if((${BUILD_CONTEXT} MATCHES .*FSBL.*) OR (NOT DEFINED BUILD_CONTEXT))
         BUILD_ALWAYS                true
     )
 
-    set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${CMAKE_SOURCE_DIR}/FSBL/build")
-    set(ST_BOOT_FLASH_FSBL_PROJECT_BUILD_TARGET ${CMAKE_SOURCE_DIR}/FSBL/build/Delta${CMAKE_EXECUTABLE_SUFFIX_CXX} CACHE FILEPATH "Path to fsbl project target")
+	set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${CMAKE_SOURCE_DIR}/FSBL/build")
+	set(ST_BOOT_FLASH_FSBL_PROJECT_BUILD_TARGET ${CMAKE_SOURCE_DIR}/FSBL/build/Delta_FSBL${CMAKE_EXECUTABLE_SUFFIX_CXX} CACHE FILEPATH "Path to fsbl project target")
 endif()
 

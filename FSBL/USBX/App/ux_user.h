@@ -113,7 +113,11 @@
 #define UX_USER_H
 
 /* USER CODE BEGIN 1 */
-
+/* Lib/screenl uvcl: USBX core and uvcl must be built with this same config */
+#define USBL_PACKET_PER_MICRO_FRAME         3
+#define UX_DEVICE_ENDPOINT_BUFFER_OWNER     1
+#define UX_SLAVE_REQUEST_CONTROL_MAX_LENGTH 512
+#define UX_SLAVE_REQUEST_DATA_MAX_LENGTH    (1024 * USBL_PACKET_PER_MICRO_FRAME)
 /* USER CODE END 1 */
 
 /* Define various build options for the USBX port.  The application should either make changes

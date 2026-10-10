@@ -54,13 +54,8 @@ void UsageFault_Handler(void);
 void SecureFault_Handler(void);
 void DebugMon_Handler(void);
 void EXTI13_IRQHandler(void);
-void DMA2D_IRQHandler(void);
-void GPDMA1_Channel0_IRQHandler(void);
-void GPDMA1_Channel1_IRQHandler(void);
-void GPDMA1_Channel2_IRQHandler(void);
-void GPDMA1_Channel3_IRQHandler(void);
 void TIM16_IRQHandler(void);
-void USB1_OTG_HS_IRQHandler(void);
+void USART1_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

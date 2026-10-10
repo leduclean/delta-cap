@@ -40,7 +40,8 @@ UINT MX_USBX_Init(VOID)
   UCHAR *pointer;
 
   /* USER CODE BEGIN MX_USBX_Init0 */
-
+  /* Lib/screenl initializes USBX itself; CubeMX can't disable this call */
+  return UX_SUCCESS;
   /* USER CODE END MX_USBX_Init0 */
 
   pointer = ux_byte_pool_buffer;
