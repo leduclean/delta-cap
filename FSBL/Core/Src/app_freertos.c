@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -79,8 +80,11 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  app_start();
-
+  int res = app_start();
+  if (res < 0) {
+    printf("app_start failed: %d\r\n", res);
+    Error_Handler();
+  }
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
