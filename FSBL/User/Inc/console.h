@@ -1,36 +1,41 @@
-/*
- * console.h
- *
- *  Created on: 31 août 2026
- *      Author: mancinis
+/**
+ * @file
+ * @brief Console helpers using USART1 RX irq to read user inputs.
  */
 
 #pragma once
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include <sys/types.h>
 
-#define UART_RX_BUFFER_SIZE 64 //1024
-
+/**
+ * @brief Start interrupt-driven reception on USART1.
+ *
+ * Must be called after osKernelInitialize().
+ *
+ * @return 0 on success, -EINVAL or a HAL status on failure.
+ */
 int console_init(void);
 
+/**
+ * @brief Read a received byte, sleeps until one arrives.
+ *
+ * @return The byte.
+ */
 int console_get_key(void);
-int console_scan_line(char *line, int max_size);
 
-int console_rx_flush(void);
+/**
+ * @brief Scan a line of the uart entry, blocking.
+ *
+ * The line ends on '\n' or '\r' (stripped) and is NUL terminated. Longer
+ * lines are cut at max_size - 1 bytes, the rest stays in the rx buffer.
+ *
+ * @param line[out] The destination line.
+ * @param max_size The size of line, including the NUL.
+ * @return The length of the line on success, -EINVAL if max_size is 0.
+ */
+ssize_t console_scan_line(char *line, size_t max_size);
 
-/* internal stuff */
-
-struct uart_buf {
-	volatile int size;
-	volatile int count;
-	volatile int free;
-	volatile int idx_read;
-	volatile int idx_write;
-	volatile int empty;
-	volatile int full;
-	volatile int overflow;
-	volatile int underflow;
-};
-
-int uart_buf_write_from_isr(volatile struct uart_buf *state, int d, int wr_pos);
+/**
+ * @brief Drop every byte pending in the rx buffer.
+ */
+void console_rx_flush(void);

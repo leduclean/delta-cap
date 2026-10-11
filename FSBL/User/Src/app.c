@@ -69,7 +69,6 @@ void console_task(void *argument)
 		default:
 			break;
 		}
-		osDelay(200);
 	}
 }
 void led_task(void *argument)
