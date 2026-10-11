@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "console.h"
+#include "syscalls.h"
 
 #include "usart.h"
 #include "FreeRTOS.h"
@@ -70,17 +71,10 @@ int console_get_key(void)
 	return c;
 }
 
-/* scanf/getchar read from the console */
-int __io_getchar(void)
+int _write([[maybe_unused]] int file, char *ptr, int len)
 {
-	return console_get_key();
-}
-
-/* printf goes out on USART1 (ST-LINK virtual COM port), blocking */
-int __io_putchar(int ch)
-{
-	HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-	return ch;
+	HAL_UART_Transmit(&huart1, (uint8_t *)ptr, len, HAL_MAX_DELAY);
+	return len;
 }
 
 ssize_t console_scan_line(char *line, size_t max_size)
@@ -97,7 +91,7 @@ ssize_t console_scan_line(char *line, size_t max_size)
 			break;
 		}
 
-		if (c == '\b' | c == 0x7f) {
+		if (c == '\b' || c == 0x7f) {
 			if (i > 0) {
 				i--;
 				printf("\b \b");
