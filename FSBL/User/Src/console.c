@@ -4,9 +4,9 @@
 #include "console.h"
 #include "syscalls.h"
 
-#include "usart.h"
 #include "FreeRTOS.h"
 #include "cmsis_os2.h"
+#include "usart.h"
 
 #define CONSOLE_RX_SIZE 64 /* must be a power of 2 */
 

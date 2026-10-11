@@ -1,20 +1,20 @@
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 
 #include "FreeRTOS.h"
-#include "task.h"
 #include "stm32n6xx_nucleo.h"
+#include "task.h"
 
 #include "app.h"
-#include "main.h"
-#include "cmsis_os2.h"
 #include "camera.h"
+#include "cmsis_os2.h"
 #include "cmw_camera.h"
+#include "main.h"
 
-#include "display.h"
 #include "console.h"
+#include "display.h"
 
 const osThreadAttr_t console_task_attr = {
 	.name = "cli",

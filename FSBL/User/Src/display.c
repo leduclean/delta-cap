@@ -1,12 +1,12 @@
 #include <string.h>
 
 #include "FreeRTOS.h"
-#include "task.h"
-#include "stm32n6xx_hal.h"
+#include "display.h"
+#include "scrl.h"
 #include "stm32_lcd.h"
 #include "stm32_lcd_ex.h"
-#include "scrl.h"
-#include "display.h"
+#include "stm32n6xx_hal.h"
+#include "task.h"
 
 #define LCD_BG_WIDTH SCREEN_WIDTH
 #define LCD_BG_HEIGHT SCREEN_HEIGHT

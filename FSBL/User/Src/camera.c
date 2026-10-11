@@ -4,8 +4,8 @@
 #include "display.h"
 
 #include "FreeRTOS.h"
-#include "cmsis_os2.h"
 #include "camera.h"
+#include "cmsis_os2.h"
 #include "cmw_camera.h"
 
 /**
