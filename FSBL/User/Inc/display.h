@@ -1,10 +1,3 @@
-/*
- * display.h
- *
- *  Created on: 1 sept. 2026
- *      Author: mancinis
- */
-
 #pragma once
 
 #include <stdint.h>
@@ -13,11 +6,26 @@
 #define SCREEN_WIDTH (320)
 #define SCREEN_HEIGHT (240)
 
-int display_text(void);
-uint8_t *display_bg_buffer(void);
+/**
+ * @brief Get a pointer to the background buffer.
+ */
+uint8_t *display_get_bg_buff(void);
 
-int display_init(uint32_t screen_size[2]);
-int display_update(void);
+/**
+ * @brief Init the display layer.
+ *
+ * @return 0 on SUCCESS, error code < 0 if SCRL failed.
+ */
+[[nodiscard]] int display_init(void);
 
+/**
+ * @brief Add the overlay to the main content.
+ *
+ * @return 0 on SUCCESS, error code < 0 when failed to refresh.
+ */
+int display_add_overlay(void);
 
-extern volatile int display_count;
+/**
+ * @brief Draw the screen
+ */
+void display_draw(void);
