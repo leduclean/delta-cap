@@ -24,10 +24,7 @@ int console_init(void);
 int console_get_key(void);
 
 /**
- * @brief Scan a line of the uart entry, blocking.
- *
- * The line ends on '\n' or '\r' (stripped) and is NUL terminated. Longer
- * lines are cut at max_size - 1 bytes, the rest stays in the rx buffer.
+ * @brief Scan a line of the uart entry echoing the typed first char and handling del.
  *
  * @param line[out] The destination line.
  * @param max_size The size of line, including the NUL.

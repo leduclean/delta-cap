@@ -85,17 +85,30 @@ int __io_putchar(int ch)
 
 ssize_t console_scan_line(char *line, size_t max_size)
 {
-	size_t i;
+	size_t i = 0;
 
 	if (!max_size)
 		return -EINVAL;
 
-	for (i = 0; i < max_size - 1; i++) {
+	for (;;) {
 		int c = console_get_key();
-
-		if (c == '\n' || c == '\r')
+		if (c == '\n' || c == '\r') {
+			printf("\r\n");
 			break;
-		line[i] = c;
+		}
+
+		if (c == '\b' | c == 0x7f) {
+			if (i > 0) {
+				i--;
+				printf("\b \b");
+			}
+			continue;
+		}
+
+		if (i < max_size - 1) {
+			line[i++] = c;
+			putchar(c);
+		}
 	}
 
 	line[i] = '\0';
@@ -130,5 +143,6 @@ int console_init(void)
 		return -EINVAL;
 
 	setvbuf(stdin, NULL, _IONBF, 0);
+	setvbuf(stdout, NULL, _IONBF, 0);
 	return HAL_UART_Receive_IT(&huart1, &console_rx_char, 1);
 }
