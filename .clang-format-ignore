@@ -1,0 +1,5 @@
+Drivers/**
+Middlewares/**
+Lib/**
+FSBL/Core/**
+FSBL/USBX/**
