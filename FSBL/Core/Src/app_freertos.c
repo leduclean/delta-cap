@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-int app_start(void);
+#include "app.h"
 
 /* USER CODE END Includes */
 

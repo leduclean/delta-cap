@@ -1,36 +1,29 @@
-/*
- * app.c
- *
- *  Created on: 31 août 2026
- *      Author: mancinis
- */
-
-#include "main.h"
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "stm32n6xx_nucleo.h"
 
+#include "app.h"
+#include "main.h"
 #include "cmsis_os2.h"
 #include "camera.h"
 #include "cmw_camera.h"
 
 #include "display.h"
 #include "console.h"
-#include <stdio.h>
-#include <string.h>
 
-osThreadId_t console_task_handle;
-const osThreadAttr_t Task_attributes_Demo_Console_Display_Camera = {
-	.name = "democd",
+const osThreadAttr_t console_task_attr = {
+	.name = "cli",
 	.priority = (osPriority_t)osPriorityNormal,
 	.stack_size = 512 * 4
 };
 
-osThreadId_t display_task_handle;
-const osThreadAttr_t Task_attributes_Demo_Display_Camera = {
-	.name = "demodd",
+const osThreadAttr_t camera_task_attr = {
+	.name = "camera",
 	.priority = (osPriority_t)osPriorityNormal,
 	.stack_size = 256 * 4
 };
@@ -41,8 +34,8 @@ void display_task(void *argument);
 int app_start(void)
 {
 	int res;
-	res = display_init();
 
+	res = display_init();
 	if (res < 0) {
 		return res;
 	}
@@ -52,17 +45,20 @@ int app_start(void)
 		return res;
 	}
 
-	console_task_handle =
-		osThreadNew(console_task, NULL,
-			    &Task_attributes_Demo_Console_Display_Camera);
-	display_task_handle = osThreadNew(display_task, NULL,
-					  &Task_attributes_Demo_Display_Camera);
+	if (!osThreadNew(console_task, NULL, &console_task_attr)) {
+		return -EINVAL;
+	}
+
+	if (!osThreadNew(display_task, NULL, &camera_task_attr)) {
+		return -EINVAL;
+	}
+
 	return 0;
 }
 
 #define MAX_CMD_SIZE 64
 
-void console_task(void *argument)
+void console_task([[maybe_unused]] void *argument)
 {
 	char line[MAX_CMD_SIZE];
 
@@ -77,10 +73,9 @@ void console_task(void *argument)
 	}
 }
 
-void display_task(void *argument)
+void display_task([[maybe_unused]] void *argument)
 {
-	int res;
-	camera_start(display_get_bg_buff(), CMW_MODE_CONTINUOUS);
+	int res = camera_start(display_get_bg_buff(), CMW_MODE_CONTINUOUS);
 	if (res < 0) {
 		printf("camera_start failed: %d\r\n", res);
 		Error_Handler();
