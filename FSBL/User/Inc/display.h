@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "ai.h"
+
 #define SCREEN_FPS 5
 #define SCREEN_WIDTH (320)
 #define SCREEN_HEIGHT (240)
@@ -21,9 +23,11 @@ uint8_t *display_get_bg_buff(void);
 /**
  * @brief Add the overlay to the main content.
  *
+ * @param det The detections from the ai inference.
+ * @param count The number of detections.
  * @return 0 on SUCCESS, error code < 0 when failed to refresh.
  */
-int display_add_overlay(void);
+int display_add_overlay(struct detection *det, int count);
 
 /**
  * @brief Draw the screen

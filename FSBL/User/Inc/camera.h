@@ -1,10 +1,14 @@
 #pragma once
-#define USE_DCACHE
-#define CAMERA_FPS 25
-
 #include <stdint.h>
 
+#define CAMERA_FPS 25
 #define CAMERA_FLIP CMW_MIRRORFLIP_NONE
+
+#define NN_WIDTH 224U
+#define NN_HEIGHT 224U
+#define NN_BPP 3U
+
+#define NN_FRAME_SIZE (NN_WIDTH * NN_HEIGHT * NN_BPP)
 
 /**
  * @brief Init the camera driver.
@@ -43,3 +47,11 @@ void CSI_IRQHandler(void);
  * @brief DCMIPP interrupt handler, called from the vector table.
  */
 void DCMIPP_IRQHandler(void);
+
+/**
+ * @brief Blocking capture of a frame at nn input format.
+ *
+ * @param dst An ai input.
+ * @return 0 on SUCCESS, error code < 0 on failure.
+ */
+int camera_nn_capture(uint8_t *dst);

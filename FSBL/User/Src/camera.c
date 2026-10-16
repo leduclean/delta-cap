@@ -20,6 +20,14 @@ static const osSemaphoreAttr_t frame_sem_attr = {
 	.cb_size = sizeof(frame_sem_cb),
 };
 
+static osSemaphoreId_t nn_frame_sem;
+static StaticSemaphore_t nn_frame_sem_cb;
+static const osSemaphoreAttr_t nn_frame_sem_attr = {
+	.name = "nn frame sem",
+	.cb_mem = &nn_frame_sem_cb,
+	.cb_size = sizeof(nn_frame_sem_cb),
+};
+
 /* Leave the driver use the default resolution */
 #define CAMERA_WIDTH 0
 #define CAMERA_HEIGHT 0
@@ -43,6 +51,19 @@ static CMW_DCMIPP_Conf_t p_conf = {
 	.mode = CMW_Aspect_ratio_fullscreen,
 };
 
+static CMW_DCMIPP_Conf_t nn_conf = {
+	.output_width = NN_WIDTH,
+	.output_height = NN_HEIGHT,
+	.output_format = DCMIPP_PIXEL_PACKER_FORMAT_RGB888_YUV444_1,
+
+	.output_bpp = 3,
+	.enable_swap = 1, /* RGB */
+	.enable_gamma_conversion = 0,
+
+	.mode = CMW_Aspect_ratio_crop,
+
+};
+
 static int _setup_pipe(void)
 {
 	int res;
@@ -57,6 +78,23 @@ static int _setup_pipe(void)
 	return pitch;
 }
 
+static int _setup_nn_pipe(void)
+{
+	int res;
+
+	uint32_t pitch;
+	res = CMW_CAMERA_SetPipeConfig(DCMIPP_PIPE2, &nn_conf, &pitch);
+	if (res < 0) {
+		return res;
+	}
+
+	if (pitch != NN_WIDTH * NN_BPP) {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 int camera_init()
 {
 	int res;
@@ -66,12 +104,23 @@ int camera_init()
 		return -EINVAL;
 	}
 
+	nn_frame_sem = osSemaphoreNew(1, 0, &nn_frame_sem_attr);
+
+	if (!nn_frame_sem) {
+		return -EINVAL;
+	}
+
 	res = CMW_CAMERA_Init(&cam_conf, NULL);
 	if (res < 0) {
 		return res;
 	}
 
 	res = _setup_pipe();
+	if (res < 0) {
+		return res;
+	}
+
+	res = _setup_nn_pipe();
 	if (res < 0) {
 		return res;
 	}
@@ -94,13 +143,50 @@ void camera_wait_for_frame(void)
 	osSemaphoreAcquire(frame_sem, osWaitForever);
 }
 
+int camera_nn_capture(uint8_t *dst)
+{
+	if (dst == NULL || ((uintptr_t)dst % 32U) != 0U) {
+		return -EINVAL;
+	}
+
+	if (nn_frame_sem == NULL) {
+		return -EINVAL;
+	}
+
+	while (osSemaphoreAcquire(nn_frame_sem, 0) == osOK) {
+	}
+
+	SCB_InvalidateDCache_by_Addr(dst, NN_FRAME_SIZE);
+
+	int res = CMW_CAMERA_Start(DCMIPP_PIPE2, dst, CMW_MODE_SNAPSHOT);
+
+	if (res < 0) {
+		return res;
+	}
+
+	if (osSemaphoreAcquire(nn_frame_sem, 2000U) != osOK) {
+		return -ETIMEDOUT;
+	}
+
+	// Actualize cache after DMA write.
+	SCB_InvalidateDCache_by_Addr(dst, NN_FRAME_SIZE);
+
+	return 0;
+}
+
 int CMW_CAMERA_PIPE_FrameEventCallback(uint32_t pipe)
 {
 	switch (pipe) {
 	case DCMIPP_PIPE1:
 		osSemaphoreRelease(frame_sem);
 		break;
+	case DCMIPP_PIPE2:
+		osSemaphoreRelease(nn_frame_sem);
+		break;
+	default:
+		break;
 	}
+
 	return 0;
 }
 
@@ -128,20 +214,20 @@ void DCMIPP_IRQHandler(void)
 }
 
 static const RCC_PeriphCLKInitTypeDef dcmipp_clk_conf = {
-      .PeriphClockSelection = RCC_PERIPHCLK_DCMIPP,
-      .DcmippClockSelection = RCC_DCMIPPCLKSOURCE_IC17,
-      .ICSelection[RCC_IC17] = {
-              .ClockSelection = RCC_ICCLKSOURCE_PLL2,
-              .ClockDivider = 3,
-      },
+ .PeriphClockSelection = RCC_PERIPHCLK_DCMIPP,
+ .DcmippClockSelection = RCC_DCMIPPCLKSOURCE_IC17,
+ .ICSelection[RCC_IC17] = {
+ .ClockSelection = RCC_ICCLKSOURCE_PLL2,
+ .ClockDivider = 3,
+ },
 };
 
 static const RCC_PeriphCLKInitTypeDef csi_clk_conf = {
-      .PeriphClockSelection = RCC_PERIPHCLK_CSI,
-      .ICSelection[RCC_IC18] = {
-              .ClockSelection = RCC_ICCLKSOURCE_PLL1,
-              .ClockDivider = 40,
-      },
+ .PeriphClockSelection = RCC_PERIPHCLK_CSI,
+ .ICSelection[RCC_IC18] = {
+ .ClockSelection = RCC_ICCLKSOURCE_PLL1,
+ .ClockDivider = 40,
+ },
 };
 
 HAL_StatusTypeDef

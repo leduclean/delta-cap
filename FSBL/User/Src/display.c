@@ -1,12 +1,13 @@
 #include <string.h>
 
 #include "FreeRTOS.h"
+#include "task.h"
+
+#include "ai.h"
 #include "display.h"
 #include "scrl.h"
-#include "stm32_lcd.h"
 #include "stm32_lcd_ex.h"
-#include "stm32n6xx_hal.h"
-#include "task.h"
+#include "stm32n6xx.h"
 
 #define LCD_BG_WIDTH SCREEN_WIDTH
 #define LCD_BG_HEIGHT SCREEN_HEIGHT
@@ -107,19 +108,79 @@ static int overlay_swap(void)
 	return res;
 }
 
+static void display_draw_detections(const struct detection *detections,
+				    size_t count)
+{
+	const float scale = 240.0f;
+	const float offset_x = 40.0f;
+
+	for (size_t i = 0; i < count; i++) {
+		const struct detection *d = &detections[i];
+
+		/* Convertir centre + taille en coins */
+		float x0 = d->x - d->w / 2.0f;
+		float y0 = d->y - d->h / 2.0f;
+		float x1 = d->x + d->w / 2.0f;
+		float y1 = d->y + d->h / 2.0f;
+
+		/* Limiter le rectangle a l'image du reseau */
+		if (x0 < 0.0f)
+			x0 = 0.0f;
+		if (y0 < 0.0f)
+			y0 = 0.0f;
+		if (x1 > 1.0f)
+			x1 = 1.0f;
+		if (y1 > 1.0f)
+			y1 = 1.0f;
+
+		if (x1 <= x0 || y1 <= y0) {
+			continue;
+		}
+
+		/* Conversion vers l'ecran 320 x 240 */
+		uint32_t sx0 = (uint32_t)(offset_x + x0 * scale + 0.5f);
+		uint32_t sy0 = (uint32_t)(y0 * scale + 0.5f);
+		uint32_t sx1 = (uint32_t)(offset_x + x1 * scale + 0.5f);
+		uint32_t sy1 = (uint32_t)(y1 * scale + 0.5f);
+
+		uint32_t largeur = sx1 - sx0;
+		uint32_t hauteur = sy1 - sy0;
+
+		/* Dessiner le rectangle */
+		UTIL_LCD_DrawRect(sx0, sy0, largeur, hauteur,
+				  UTIL_LCD_COLOR_GREEN);
+
+		/* Afficher classe et confiance */
+		uint32_t label_y = (sy0 >= 12U) ? sy0 - 12U : sy0;
+		unsigned score = (unsigned)(d->conf * 100.0f + 0.5f);
+
+		UTIL_LCD_SetTextColor(UTIL_LCD_COLOR_GREEN);
+		UTIL_LCDEx_PrintfAt(sx0, label_y, LEFT_MODE, "cls %d %u%%",
+				    d->cls, score);
+	}
+
+	UTIL_LCD_SetTextColor(UTIL_LCD_COLOR_WHITE);
+}
+
 static int display_count = 0;
 
-int display_add_overlay(void)
+int display_add_overlay(struct detection *det, int count)
 {
-	int res;
-	res = overlay_begin_draw();
+	int res = overlay_begin_draw();
 	if (res < 0) {
 		return res;
 	}
-	UTIL_LCD_Clear(4);
+
+	/* Effacer les dessins de la frame precedente */
+	UTIL_LCD_Clear(UTIL_LCD_COLOR_TRANSPARENT);
+
+	/* Affichage du compteur existant */
 	UTIL_LCDEx_PrintfAt(0, LINE(1), CENTER_MODE, "display count %d",
 			    display_count++);
 
-	res = overlay_swap();
-	return res;
+	/* Dessiner les rectangles sur le calque */
+	display_draw_detections(det, count);
+
+	/* Afficher le nouveau calque */
+	return overlay_swap();
 }
