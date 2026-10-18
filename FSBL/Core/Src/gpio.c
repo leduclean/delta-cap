@@ -46,7 +46,16 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPION_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /*Configure GPIO pins : PN12 OCTOSPI_NCS_Pin */
+  GPIO_InitStruct.Pin = GPIO_PIN_12|OCTOSPI_NCS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF9_XSPIM_P2;
+  HAL_GPIO_Init(GPION, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA10 UCPD1_VSENSE_Pin */
   GPIO_InitStruct.Pin = GPIO_PIN_10|UCPD1_VSENSE_Pin;

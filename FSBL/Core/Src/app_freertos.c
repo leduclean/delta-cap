@@ -19,10 +19,10 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
-#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 #include "app.h"
 
 /* USER CODE END Includes */

@@ -376,6 +376,11 @@ void SystemClock_Config(void)
   HAL_GPIO_ConfigPinAttributes(GPIOH,GPIO_PIN_9,GPIO_PIN_NSEC|GPIO_PIN_PRIV);
 
 /* USER CODE BEGIN RIF_Init 1 */
+  /* NPU master: CubeMX RIMU doesn't list it. Same as DCMIPP so the RISAF lets
+   * the NPU read its epoch blobs and buffers in AXISRAM. */
+  RIMC_master.MasterCID = RIF_CID_1;
+  RIMC_master.SecPriv = RIF_ATTRIBUTE_SEC | RIF_ATTRIBUTE_PRIV;
+  HAL_RIF_RIMC_ConfigMasterAttributes(RIF_MASTER_INDEX_NPU, &RIMC_master);
 
 /* USER CODE END RIF_Init 1 */
 /* USER CODE BEGIN RIF_Init 2 */
