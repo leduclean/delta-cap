@@ -42,3 +42,58 @@ target_compile_definitions(screenl PUBLIC
     USBL_PACKET_PER_MICRO_FRAME=3
 )
 target_link_libraries(screenl PUBLIC lcd stm32cubemx)
+
+#TODO: Clean This lib declaration
+
+# NPU runtime + compiled model.
+# Source list taken from the ST GettingStarted-ObjectDetection Makefile.
+set(LL_ATON stedgeai-lib/Npu/ll_aton)
+add_library(ai STATIC EXCLUDE_FROM_ALL # built only once something links it
+    ${LL_ATON}/ll_aton.c
+    ${LL_ATON}/ll_aton_rt_main.c
+    ${LL_ATON}/ll_aton_runtime.c
+    ${LL_ATON}/ll_aton_cipher.c
+    ${LL_ATON}/ll_aton_stai_internal.c
+    ${LL_ATON}/ll_aton_util.c
+    ${LL_ATON}/ll_sw_float.c
+    ${LL_ATON}/ll_sw_integer.c
+    ${LL_ATON}/ll_aton_lib.c
+    ${LL_ATON}/ll_aton_lib_sw_operators.c
+    ${LL_ATON}/ll_aton_osal_freertos.c
+    stedgeai-lib/Npu/Devices/STM32N6xx/npu_cache.c
+    stedgeai-lib/Npu/Devices/STM32N6xx/mcu_cache.c
+    ../Model/network.c
+    ../Model/stai_network.c
+    # External NOR flash on xSPI2 (holds the weights), copied by hand like nucleo_bus.c
+    ../Drivers/BSP/STM32N6xx_Nucleo/stm32n6xx_nucleo_xspi.c
+    ../Drivers/BSP/Components/mx25um51245g/mx25um51245g.c
+)
+target_include_directories(ai PUBLIC
+    stedgeai-lib/Inc
+    ${LL_ATON}
+    stedgeai-lib/Npu/Devices/STM32N6xx
+    ../Model
+    ../Drivers/BSP/Components/mx25um51245g
+)
+target_compile_definitions(ai PUBLIC
+    LL_ATON_PLATFORM=LL_ATON_PLAT_STM32N6
+    LL_ATON_OSAL=LL_ATON_OSAL_FREERTOS # ai task blocks on a semaphore given by the NPU IRQ
+    APP_HAS_PARALLEL_NETWORKS=0 # a single network
+    LL_ATON_RT_MODE=LL_ATON_RT_ASYNC
+    LL_ATON_SW_FALLBACK
+    LL_ATON_DBG_BUFFER_INFO_EXCLUDED=1
+)
+target_link_libraries(ai PUBLIC stm32cubemx)
+
+
+file(GLOB_RECURSE AI_PP_SRC CONFIGURE_DEPENDS
+    stm32-vision-models-pp/Src/*.c
+    ai-pp-wrapper/*.c
+)
+add_library(ai-pp STATIC EXCLUDE_FROM_ALL ${AI_PP_SRC})
+target_include_directories(ai-pp PUBLIC
+    stm32-vision-models-pp/Inc
+    ai-pp-wrapper
+    ../Drivers/CMSIS/DSP/Include # arm_math.h
+)
+target_link_libraries(ai-pp PUBLIC ai stm32cubemx m)
