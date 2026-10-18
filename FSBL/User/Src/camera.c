@@ -104,6 +104,17 @@ int CMW_CAMERA_PIPE_FrameEventCallback(uint32_t pipe)
 	return 0;
 }
 
+/*
+ * The default one asserts. A pipe error is an overrun: the DCMIPP couldn't
+ * write the frame to RAM in time, typically while the NPU saturates the AXI
+ * bus during an inference. The frame is lost, the next one is fine.
+ * ponytail: same as ST (app_camerapipeline.c "FIXME"), just counted.
+ */
+void CMW_CAMERA_PIPE_ErrorCallback([[maybe_unused]] uint32_t pipe)
+{
+	/*Same as ST(app_camerapipeline.c "FIXME"): the frame is dropped, ignored. */
+}
+
 void CSI_IRQHandler(void)
 {
 	DCMIPP_HandleTypeDef *hcamera_dcmipp = CMW_CAMERA_GetDCMIPPHandle();

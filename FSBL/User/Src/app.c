@@ -1,6 +1,8 @@
+#include "ai.h"
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stm32n6xx_hal.h>
 #include <string.h>
 
 #include "FreeRTOS.h"
@@ -45,6 +47,11 @@ int app_start(void)
 		return res;
 	}
 
+	res = ai_init();
+	if (res < 0) {
+		return res;
+	}
+
 	if (!osThreadNew(console_task, NULL, &console_task_attr)) {
 		return -EINVAL;
 	}
@@ -70,6 +77,19 @@ void console_task([[maybe_unused]] void *argument)
 			continue;
 		}
 		printf("cmd is: %s \r\n", line);
+		if (strcmp(line, "ai") == 0) {
+			memset(ai_input(), 0, ai_input_size());
+			int res;
+			int t0 = HAL_GetTick();
+			res = ai_run();
+			int dt = HAL_GetTick() - t0;
+			uint32_t time_in_ms = (dt * 1000) / configTICK_RATE_HZ;
+			printf("Time for inference: %ld ms", time_in_ms);
+			if (res < 0) {
+				printf("ai run failed: %d\r\n", res);
+				Error_Handler();
+			}
+		}
 	}
 }
 
