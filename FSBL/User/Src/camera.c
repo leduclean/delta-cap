@@ -10,8 +10,8 @@
 #include "stm32n6xx_it.h"
 
 /**
- * @brief Semaphore used for interrupt released by the frame ISR
- * and taken by a call to camera_wait_for_frame().
+ * @brief Semaphore that indicates that a frame is available in 
+ * in the display pipe and ready to be dislayed.
  */
 static osSemaphoreId_t frame_sem;
 static StaticSemaphore_t frame_sem_cb;
@@ -21,6 +21,10 @@ static const osSemaphoreAttr_t frame_sem_attr = {
 	.cb_size = sizeof(frame_sem_cb),
 };
 
+/**
+ * @brief Semaphore that indicates that a frame is available in 
+ * the neural network pipe and ready for inference.
+ */
 static osSemaphoreId_t nn_frame_sem;
 static StaticSemaphore_t nn_frame_sem_cb;
 static const osSemaphoreAttr_t nn_frame_sem_attr = {
