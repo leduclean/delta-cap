@@ -1,14 +1,13 @@
-#include "ai.h"
+#include <app_config.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stm32n6xx_hal.h>
-#include <string.h>
 
 #include "FreeRTOS.h"
-#include "stm32n6xx_nucleo.h"
 #include "task.h"
 
+#include "ai.h"
 #include "app.h"
 #include "camera.h"
 #include "cmsis_os2.h"
@@ -24,14 +23,67 @@ const osThreadAttr_t console_task_attr = {
 	.stack_size = 512 * 4
 };
 
-const osThreadAttr_t camera_task_attr = {
-	.name = "camera",
+const osThreadAttr_t display_task_attr = {
+	.name = "display",
 	.priority = (osPriority_t)osPriorityNormal,
 	.stack_size = 256 * 4
 };
 
-void console_task(void *argument);
-void display_task(void *argument);
+const osThreadAttr_t ai_task_attr = {
+	.name = "ai",
+	/* Since ai is high cost task we need to put it with low priority
+    * to ensure that we will display when a new frame arrives*/
+	.priority = (osPriority_t)osPriorityBelowNormal,
+	.stack_size = 256 * 4
+};
+
+#define MAX_CMD_SIZE 64
+
+static void console_task([[maybe_unused]] void *argument)
+{
+	char line[MAX_CMD_SIZE];
+
+	console_rx_flush();
+	for (;;) {
+		printf("> ");
+		if (console_scan_line(line, sizeof(line)) <= 0) {
+			printf("Invalid Input \n");
+			continue;
+		}
+		/** Add some command handling via strcomp */
+	}
+}
+
+static void ai_task([[maybe_unused]] void *argument)
+{
+	for (;;) {
+		int res = camera_nn_capture(ai_input());
+		if (res == 0)
+			res = ai_run();
+		if (res < 0)
+			printf("ai: error %d\r\n", res);
+	}
+}
+
+static void display_task([[maybe_unused]] void *argument)
+{
+	int res = camera_start(display_get_bg_buff(), CMW_MODE_CONTINUOUS);
+	if (res < 0) {
+		printf("camera_start failed: %d\r\n", res);
+		Error_Handler();
+	}
+
+	for (;;) {
+		camera_run();
+		camera_wait_for_frame();
+
+		struct detection det[AI_OD_YOLOV2_PP_MAX_BOXES_LIMIT];
+		int n = ai_get_detections(det, AI_OD_YOLOV2_PP_MAX_BOXES_LIMIT);
+
+		display_add_overlay(det, n);
+		display_draw();
+	}
+}
 
 int app_start(void)
 {
@@ -56,54 +108,13 @@ int app_start(void)
 		return -EINVAL;
 	}
 
-	if (!osThreadNew(display_task, NULL, &camera_task_attr)) {
+	if (!osThreadNew(display_task, NULL, &display_task_attr)) {
+		return -EINVAL;
+	}
+
+	if (!osThreadNew(ai_task, NULL, &ai_task_attr)) {
 		return -EINVAL;
 	}
 
 	return 0;
-}
-
-#define MAX_CMD_SIZE 64
-
-void console_task([[maybe_unused]] void *argument)
-{
-	char line[MAX_CMD_SIZE];
-
-	console_rx_flush();
-	for (;;) {
-		printf("> ");
-		if (console_scan_line(line, sizeof(line)) <= 0) {
-			printf("Invalid Input \n");
-			continue;
-		}
-		printf("cmd is: %s \r\n", line);
-		if (strcmp(line, "ai") == 0) {
-			memset(ai_input(), 0, ai_input_size());
-			int res;
-			int t0 = HAL_GetTick();
-			res = ai_run();
-			int dt = HAL_GetTick() - t0;
-			uint32_t time_in_ms = (dt * 1000) / configTICK_RATE_HZ;
-			printf("Time for inference: %ld ms", time_in_ms);
-			if (res < 0) {
-				printf("ai run failed: %d\r\n", res);
-				Error_Handler();
-			}
-		}
-	}
-}
-
-void display_task([[maybe_unused]] void *argument)
-{
-	int res = camera_start(display_get_bg_buff(), CMW_MODE_CONTINUOUS);
-	if (res < 0) {
-		printf("camera_start failed: %d\r\n", res);
-		Error_Handler();
-	}
-	for (;;) {
-		camera_run();
-		camera_wait_for_frame();
-		display_add_overlay();
-		display_draw();
-	}
 }
