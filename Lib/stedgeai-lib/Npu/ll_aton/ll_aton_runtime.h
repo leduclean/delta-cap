@@ -1,13 +1,13 @@
 /**
  ******************************************************************************
  * @file    ll_aton_runtime.h
- * @author  SRA Artificial Intelligence & Embedded Architectures
+ * @author  STMicroelectronics
  * @brief   Header file of ATON LL runtime.
  * @note    ATON LL runtime currently assumes a single network run
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024 STMicroelectronics.
+ * Copyright (c) 2021-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -53,6 +53,8 @@ extern "C"
 
   static inline void __ll_clear_aton_owner(const NN_Instance_TypeDef *current_owner, bool reset_mask)
   {
+    LL_ATON_LIB_UNUSED(current_owner);
+
 #ifndef NDEBUG
     extern uint32_t volatile __ll_current_wait_mask;
 #endif // !NDEBUG
@@ -84,8 +86,10 @@ extern "C"
    **/
   static inline void __LL_ATON_RT_Start_AtoNN_Epoch(const NN_Instance_TypeDef *nn_instance)
   {
+    LL_ATON_LIB_UNUSED(nn_instance);
+
     LL_ATON_ASSERT(nn_instance != NULL);
-#if (LL_ATON_RT_MODE == LL_ATON_RT_ASYNC)
+#if (LL_ATON_RT_MODE != LL_ATON_RT_POLLING)
     LL_ATON_ASSERT(nn_instance->exec_state.triggered_events ==
                    0x0); // with the removal of parallel SW/HW epochs execution all triggered events must have been
                          // cleared at this point in time!
@@ -116,6 +120,8 @@ extern "C"
   /* set wait mask(s) in interrupt controller */
   static inline void __LL_ATON_RT_SetWaitMask(uint32_t wait_mask)
   {
+    LL_ATON_LIB_UNUSED(wait_mask);
+
 #ifndef NDEBUG
     extern const NN_Instance_TypeDef *volatile __ll_current_aton_ip_owner;
     LL_ATON_ASSERT(__ll_current_aton_ip_owner != NULL);
@@ -124,7 +130,7 @@ extern "C"
     __ll_current_wait_mask = wait_mask;
 #endif // !NDEBUG
 
-#if (LL_ATON_RT_MODE == LL_ATON_RT_ASYNC)
+#if (LL_ATON_RT_MODE != LL_ATON_RT_POLLING)
     wait_mask <<= ATON_STRENG_INT(0);
 #ifndef LL_ATON_RT_USE_IRQ_OR_MASK
     /* configure interrupt controller AND mask for epoch block */
@@ -136,7 +142,7 @@ extern "C"
     val &= ~wait_mask;
     ATON_INTCTRL_STD_INTORMSK_SET(val);
 #endif // LL_ATON_RT_USE_IRQ_OR_MASK
-#endif // (LL_ATON_RT_MODE == LL_ATON_RT_ASYNC)
+#endif // (LL_ATON_RT_MODE != LL_ATON_RT_POLLING)
   }
 
   /* return from inserted epoch block */
@@ -220,8 +226,11 @@ extern "C"
     __LL_ATON_RT_SetCurrentEpochBlock(new_index, __ll_current_aton_ip_owner);
   }
 
+#if (LL_ATON_RT_MODE != LL_ATON_RT_IRQ_SCHED)
+
   /**
-   * @brief Template for synchronously executing a single network instance one time (e.g. regression tests)
+   * @brief Template for synchronously executing a single network instance one time in asynchronous or polling mode
+   * (e.g. regression tests)
    * @param network_instance pointer to the network instance representing the network and execution instance to execute.
    *                         The instance object MUST have already set a valid link to a network interface.
    *                         The user may declare/instantiate such an object by using either macro
@@ -232,6 +241,24 @@ extern "C"
    * @note this function does NOT make part of the ATON Runtime User API
    */
   void LL_ATON_RT_Main(const NN_Instance_TypeDef *network_instance);
+
+#else // (LL_ATON_RT_MODE == LL_ATON_RT_IRQ_SCHED)
+
+/**
+ * @brief Template for synchronously executing a single network instance one time in interrupt schedule
+ * (`LL_ATON_RT_IRQ_SCHED`) mode (e.g. regression tests)
+ * @param network_instance pointer to the network instance representing the network and execution instance to execute.
+ *                         The instance object MUST have already set a valid link to a network interface.
+ *                         The user may declare/instantiate such an object by using either macro
+ *                          `LL_ATON_DECLARE_NAMED_NN_INSTANCE_AND_INTERFACE()` to create both the execution instance
+ *                         and the network interface, or macros
+ *                         `LL_ATON_DECLARE_NAMED_NN_INTERFACE()` & `LL_ATON_DECLARE_NAMED_NN_INSTANCE()` to
+ *                         create/instantiate the objects separately.
+ * @note this function does NOT make part of the ATON Runtime User API
+ */
+void LL_ATON_RT_Main_Irq_Sched(const NN_Instance_TypeDef *network_instance);
+
+#endif // (LL_ATON_RT_MODE == LL_ATON_RT_IRQ_SCHED)
 
   /** @brief Dumps status of all DMAs. Used for debugging purposes
    */

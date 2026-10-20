@@ -1,13 +1,13 @@
 /**
  ******************************************************************************
  * @file    ll_aton_caches_interface.h
- * @author  SRA Artificial Intelligence & Embedded Architectures
+ * @author  STMicroelectronics
  * @brief   Header file for defining an implementing generic cache handling
  *          functions for the application writer
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024 STMicroelectronics.
+ * Copyright (c) 2024-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -300,6 +300,88 @@ extern "C"
     LL_ATON_LIB_UNUSED(size);
   }
 
+  static inline void LL_ATON_Cache_NPU_Clean_Invalidate_Range(uintptr_t virtual_addr, uint32_t size)
+  {
+    LL_ATON_LIB_UNUSED(virtual_addr);
+    LL_ATON_LIB_UNUSED(size);
+  }
+
+#elif (LL_ATON_PLATFORM == LL_ATON_PLAT_SR6P5E)
+
+#warning "Cache maintenance functions are not yet implemented for SR6P5E platform."
+
+#elif (LL_ATON_PLATFORM == LL_ATON_PLAT_STM32A98)
+
+  /*** MCU cache maintenance functions ***/
+
+#include "mcu_cache.h"
+
+  /**
+   * @brief perform MCU cache clean maintenance operation on an address range
+   * @details whenever the content of a buffer is changed by the application (which is especially the case for input
+   *          buffers) cache maintenance MUST be taken into account before being able to run the network.
+   * @param[in] virtual_addr start address (host-side/virtual) of address range
+   * @param[in] size size of address range
+   *
+   * @note the address range should fulfill alignment constraints with respect to the MCU cache line size
+   *       for both its `address` & `size` (to better correspond to what this operation will actually do)!
+   * @note this function is intended to handle the case where a buffer has been filled by the MCU/processor (such
+   *       passing thru the MCU cache) and should be called AFTER that the buffer has been filled
+   */
+  static inline void LL_ATON_Cache_MCU_Clean_Range(uintptr_t virtual_addr, uint32_t size)
+  {
+    LL_ATON_OSAL_LOCK_MCU_CACHE();
+    mcu_cache_clean_range(virtual_addr, virtual_addr + size);
+    LL_ATON_OSAL_UNLOCK_MCU_CACHE();
+  }
+
+  /**
+   * @brief perform MCU cache invalidate maintenance operation on an address range
+   * @details whenever the content of a buffer is changed by the application (which is especially the case for input
+   *          buffers) cache maintenance MUST be taken into account before being able to run the network.
+   * @param[in] virtual_addr start address (host-side/virtual) of address range
+   * @param[in] size size of address range
+   *
+   * @note the address range should fulfill alignment constraints with respect to the MCU cache line size
+   *       for both its `address` & `size` (to better correspond to what this operation will actually do)!
+   * @note this function is intended to handle the case where a buffer has been filled by-passing the MCU/processor
+   *       cache (e.g. using a DMA) and should be called BEFORE the buffer gets filled
+   */
+  static inline void LL_ATON_Cache_MCU_Invalidate_Range(uintptr_t virtual_addr, uint32_t size)
+  {
+    LL_ATON_OSAL_LOCK_MCU_CACHE();
+    mcu_cache_invalidate_range(virtual_addr, virtual_addr + size);
+    LL_ATON_OSAL_UNLOCK_MCU_CACHE();
+  }
+
+  /**
+   * @brief perform MCU cache clean & invalidate maintenance operation on an address range
+   * @details whenever the content of a buffer is changed by the application (which is especially the case for input
+   *          buffers) cache maintenance MUST be taken into account before being able to run the network.
+   * @param[in] virtual_addr start address (host-side/virtual) of address range
+   * @param[in] size size of address range
+   *
+   * @note the address range should fulfill alignment constraints with respect to the MCU cache line size
+   *       for both its `address` & `size` (to better correspond to what this operation will actually do)!
+   * @note this function is intended to handle the case where a buffer has been filled by the MCU/processor
+   *       (such passing thru the MCU cache) and is gonna to be modified immediately afterwards by-passing
+   *       the MCU/processor cache (e.g. using a DMA). It should be called AFTER that the buffer has been
+   *       filled
+   */
+  static inline void LL_ATON_Cache_MCU_Clean_Invalidate_Range(uintptr_t virtual_addr, uint32_t size)
+  {
+    LL_ATON_OSAL_LOCK_MCU_CACHE();
+    mcu_cache_clean_invalidate_range(virtual_addr, virtual_addr + size);
+    LL_ATON_OSAL_UNLOCK_MCU_CACHE();
+  }
+
+  /*** NPU cache maintenance functions ***/
+
+  static inline void LL_ATON_Cache_NPU_Clean_Range(uintptr_t virtual_addr, uint32_t size)
+  {
+    LL_ATON_LIB_UNUSED(virtual_addr);
+    LL_ATON_LIB_UNUSED(size);
+  }
   static inline void LL_ATON_Cache_NPU_Clean_Invalidate_Range(uintptr_t virtual_addr, uint32_t size)
   {
     LL_ATON_LIB_UNUSED(virtual_addr);

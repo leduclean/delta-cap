@@ -1,12 +1,12 @@
 /**
  ******************************************************************************
  * @file    ll_aton_debug.c
- * @author  SRA Artificial Intelligence & Embedded Architectures
+ * @author  STMicroelectronics
  * @brief   ATON LL library support for debugging (buffer dumpers, ...).
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024 STMicroelectronics.
+ * Copyright (c) 2021-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -59,6 +59,7 @@
 #define LL_ATON_PUTS(...)   fputs(__VA_ARGS__, fname)
 #define LL_ATON_FFLUSH(...) fflush(fname)
 #endif
+#define LL_DEBUG_PRINT_INTEGER
 
 LL_ATON_WEAK void *LL_ATON_physical_to_virtual(uintptr_t addr)
 {
@@ -340,11 +341,11 @@ static void __dump_buffer_Qmn_8bit(const LL_Buffer_InfoTypeDef *buf)
   dim_w = dim_w == 0 ? 1 : dim_w;
   dim_c = dim_c == 0 ? 1 : dim_c;
 
+#ifndef LL_DEBUG_PRINT_INTEGER
   int32_t Qm = buf->Qm;
-
   int32_t Qn = buf->Qn;
   // int32_t Qsign = buf->Qunsigned == 1 ? 0 : 1;
-  //
+
   float scale = buf->scale != 0 ? buf->scale[0] : 1.0;
   float off = buf->offset != 0 ? buf->offset[0] : 0;
 
@@ -353,6 +354,7 @@ static void __dump_buffer_Qmn_8bit(const LL_Buffer_InfoTypeDef *buf)
     scale = 1.0;
     off = 0;
   }
+#endif // LL_DEBUG_PRINT_INTEGER
 
   int32_t dim_b_c = buf->batch;
   // int32_t num_batch = dim_c / dim_b_c;
@@ -384,10 +386,15 @@ static void __dump_buffer_Qmn_8bit(const LL_Buffer_InfoTypeDef *buf)
                                  h * dim_w * dim_b_c + w * dim_b_c + (c % dim_b_c);
           int32_t data = p[off_orlando];
           data = is_unsigned ? data : (int8_t)(data);
+#ifdef LL_DEBUG_PRINT_INTEGER
+          LL_ATON_PRINTF("%d. ", data);
+#else
           if (Qn == 0 && scale == 1.0)
             LL_ATON_PRINTF("%-.0f. ", (Q_to_floating(data, Qm, Qn) - off) * scale);
           else
+
             LL_ATON_PRINTF("%0.6f ", (Q_to_floating(data, Qm, Qn) - off) * scale);
+#endif
         }
         LL_ATON_PRINTF("]");
       }
@@ -425,6 +432,7 @@ static void __dump_buffer_Qmn_16bit(const LL_Buffer_InfoTypeDef *buf)
   LL_ATON_PRINTF("dim_m=%" PRId32 " off=%" PRId32, dim_m, dim_c * dim_h * dim_w);
 
   int32_t Qm = buf->Qm;
+#ifndef LL_DEBUG_PRINT_INTEGER
   int32_t Qn = buf->Qn;
   // int32_t Qsign = buf->Qunsigned == 1 ? 0 : 1;
 
@@ -436,6 +444,7 @@ static void __dump_buffer_Qmn_16bit(const LL_Buffer_InfoTypeDef *buf)
     scale = 1.0;
     off = 0;
   }
+#endif // LL_DEBUG_PRINT_INTEGER
 
   int32_t dim_b_c = buf->batch;
   // int32_t num_batch = dim_c / dim_b_c;
@@ -478,10 +487,15 @@ static void __dump_buffer_Qmn_16bit(const LL_Buffer_InfoTypeDef *buf)
             LL_ATON_PRINTF("+sat ");
           else if (data == -(1 << (Qm)))
             LL_ATON_PRINTF("-sat ");
+
+#ifdef LL_DEBUG_PRINT_INTEGER
+          LL_ATON_PRINTF("%d. ", data);
+#else
           else if (Qn == 0 && scale == 1.0)
             LL_ATON_PRINTF("%-.0f ", (Q_to_floating(data, Qm, Qn) - off) * scale);
           else
             LL_ATON_PRINTF("%0.6f ", (Q_to_floating(data, Qm, Qn) - off) * scale);
+#endif
         }
         LL_ATON_PRINTF("]");
       }
@@ -900,6 +914,7 @@ static void __dump_buffer(int mode, const LL_Buffer_InfoTypeDef *buf)
         __dump_buffer_raw_Qmn_32bit(buf);
       break;
     case MODE_ONNX_INFLOAT:
+      printf("Dumping buffer in integer.\n");
       switch (buf->type)
       {
       case DataType_FLOAT:
@@ -907,13 +922,21 @@ static void __dump_buffer(int mode, const LL_Buffer_InfoTypeDef *buf)
         break;
       default:
         if (LL_Buffer_bits(buf) < 8)
+        {
           __dump_buffer_Qmn_nbit(buf);
+        }
         if (LL_Buffer_bits(buf) == 8)
+        {
           __dump_buffer_Qmn_8bit(buf);
+        }
         if (LL_Buffer_bits(buf) == 16)
+        {
           __dump_buffer_Qmn_16bit(buf);
+        }
         if (LL_Buffer_bits(buf) == 32)
+        {
           __dump_buffer_Qmn_32bit(buf);
+        }
         break;
       }
       break;
@@ -978,6 +1001,11 @@ void set_all_buffers(int in, unsigned int val, const NN_Interface_TypeDef *nn_in
 
 void dump_buffer(int mode, const char *bufname, int in, const NN_Interface_TypeDef *nn_interface)
 {
+  LL_ATON_LIB_UNUSED(mode);
+  LL_ATON_LIB_UNUSED(bufname);
+  LL_ATON_LIB_UNUSED(in);
+  LL_ATON_LIB_UNUSED(nn_interface);
+
 #ifndef NDEBUG
   __dump_buffer(mode, __get_buffer(bufname, in, nn_interface));
 #endif // !NDEBUG
@@ -985,6 +1013,10 @@ void dump_buffer(int mode, const char *bufname, int in, const NN_Interface_TypeD
 
 void dump_all_buffers(int mode, int in, const NN_Interface_TypeDef *nn_interface)
 {
+  LL_ATON_LIB_UNUSED(mode);
+  LL_ATON_LIB_UNUSED(in);
+  LL_ATON_LIB_UNUSED(nn_interface);
+
 #ifndef NDEBUG
   if ((in & BUFF_IN) != 0)
     __dump_epoch_buffers(nn_interface->input_buffers_info(), mode, -1);
@@ -997,13 +1029,15 @@ void dump_all_buffers(int mode, int in, const NN_Interface_TypeDef *nn_interface
 
 void dump_epoch_buffers(int mode, int epoch, const NN_Interface_TypeDef *nn_interface)
 {
+  LL_ATON_LIB_UNUSED(mode);
+  LL_ATON_LIB_UNUSED(epoch);
+  LL_ATON_LIB_UNUSED(nn_interface);
+
 #ifndef NDEBUG
   __dump_epoch_buffers(nn_interface->internal_buffers_info(), mode, epoch);
 #endif // !NDEBUG
 }
 
-/** @brief Return the total length of network parameters
- */
 unsigned int get_params_len(const NN_Interface_TypeDef *nn_interface)
 {
   LL_Buffer_InfoTypeDef *bufdesc = (LL_Buffer_InfoTypeDef *)nn_interface->input_buffers_info();

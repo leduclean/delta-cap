@@ -1,12 +1,12 @@
 /**
  ******************************************************************************
  * @file    ll_aton_reloc_callbacks.c
- * @author  GPM/AIS Team
+ * @author  STMicroelectronics
  * @brief   Relocatable network support
  ******************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2024,2025 STMicroelectronics.
+ * <h2><center>&copy; Copyright (c) 2024-2026 STMicroelectronics.
  * All rights reserved.</center></h2>
  *
  * This software is licensed under terms that can be found in the LICENSE file in
@@ -126,7 +126,7 @@ void LL_ATON_Cache_NPU_Clean_Invalidate_Range(uintptr_t virtual_addr, uint32_t s
  */
 
 int LL_ATON_LIB_Concat(const LL_Buffer_InfoTypeDef *inputs, unsigned int ninputs, const LL_Buffer_InfoTypeDef *output,
-                       unsigned int axis, int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                       unsigned int axis, int32_t dma_in, int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
   register const struct ll_aton_reloc_callback *cbs = _network_rt_ctx.cbs;
@@ -142,8 +142,8 @@ int LL_ATON_LIB_Concat(const LL_Buffer_InfoTypeDef *inputs, unsigned int ninputs
 
 int LL_ATON_LIB_DMA_ImageToRow(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                               unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w, int dma_in,
-                               int dma_out, const NN_Instance_TypeDef *nn_instance)
+                               unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w, int32_t dma_in,
+                               int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
   register const struct ll_aton_reloc_callback *cbs = _network_rt_ctx.cbs;
@@ -160,7 +160,7 @@ int LL_ATON_LIB_DMA_ImageToRow(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned
 
 int LL_ATON_LIB_DMA_SpaceToDepth(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                  const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                                 unsigned int blocksize_w, int dma_in, int dma_out,
+                                 unsigned int blocksize_w, int32_t dma_in, int32_t dma_out,
                                  const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
@@ -178,8 +178,8 @@ int LL_ATON_LIB_DMA_SpaceToDepth(const LL_LIB_TensorInfo_TypeDef *inputs, unsign
 
 int LL_ATON_LIB_DMA_RowToImage(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                               unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w, int dma_in,
-                               int dma_out, const NN_Instance_TypeDef *nn_instance)
+                               unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w, int32_t dma_in,
+                               int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
   register const struct ll_aton_reloc_callback *cbs = _network_rt_ctx.cbs;
@@ -196,7 +196,7 @@ int LL_ATON_LIB_DMA_RowToImage(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned
 
 int LL_ATON_LIB_DMA_DepthToSpace(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                  const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                                 unsigned int blocksize_w, int dma_in, int dma_out,
+                                 unsigned int blocksize_w, int32_t dma_in, int32_t dma_out,
                                  const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
@@ -214,7 +214,7 @@ int LL_ATON_LIB_DMA_DepthToSpace(const LL_LIB_TensorInfo_TypeDef *inputs, unsign
 
 int LL_ATON_LIB_DMA_Transpose(const LL_Buffer_InfoTypeDef *input, const uint32_t *input_axes_offsets,
                               const LL_Buffer_InfoTypeDef *output, const uint32_t *output_axes_offsets,
-                              const uint8_t *target_pos, const uint8_t *perm_to_use, int dma_in, int dma_out,
+                              const uint8_t *target_pos, const uint8_t *perm_to_use, int32_t dma_in, int32_t dma_out,
                               const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
@@ -230,8 +230,8 @@ int LL_ATON_LIB_DMA_Transpose(const LL_Buffer_InfoTypeDef *input, const uint32_t
   return res;
 }
 
-int LL_ATON_LIB_Cast(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_TensorInfo_TypeDef *output, int dma_in,
-                     int dma_out, const NN_Instance_TypeDef *nn_instance)
+int LL_ATON_LIB_Cast(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_TensorInfo_TypeDef *output, int32_t dma_in,
+                     int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
   register const struct ll_aton_reloc_callback *cbs = _network_rt_ctx.cbs;
@@ -261,7 +261,7 @@ int LL_ATON_LIB_Softmax(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_Ten
 }
 
 int __LL_ATON_LIB_DMA_Outputs_Flat_Copy(const LL_Buffer_InfoTypeDef *input, const LL_Buffer_InfoTypeDef *outputs,
-                                        unsigned int nr_of_outputs, int dma_in, int dma_out,
+                                        unsigned int nr_of_outputs, int32_t dma_in, int32_t dma_out,
                                         const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
@@ -278,7 +278,7 @@ int __LL_ATON_LIB_DMA_Outputs_Flat_Copy(const LL_Buffer_InfoTypeDef *input, cons
 
 int LL_ATON_LIB_DMA_Outputs_Slice_SplitLike(const LL_Buffer_InfoTypeDef *input, const LL_Buffer_InfoTypeDef *output,
                                             uint32_t tot_out_size, uint32_t width_in_bytes, uint32_t fheight,
-                                            uint32_t line_offset, uint8_t n_bits, int dma_in, int dma_out,
+                                            uint32_t line_offset, uint8_t n_bits, int32_t dma_in, int32_t dma_out,
                                             const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
@@ -296,7 +296,7 @@ int LL_ATON_LIB_DMA_Outputs_Slice_SplitLike(const LL_Buffer_InfoTypeDef *input, 
 
 int __LL_ATON_LIB_DMA_Outputs_Channel_Split_Aton(const LL_Buffer_InfoTypeDef *input,
                                                  const LL_Buffer_InfoTypeDef *outputs, unsigned int nr_of_outputs,
-                                                 unsigned int leading_dims, int dma_in, int dma_out,
+                                                 unsigned int leading_dims, int32_t dma_in, int32_t dma_out,
                                                  const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
@@ -314,7 +314,8 @@ int __LL_ATON_LIB_DMA_Outputs_Channel_Split_Aton(const LL_Buffer_InfoTypeDef *in
 
 int __LL_ATON_LIB_DMA_Outputs_Channel_Split_Batched(const LL_Buffer_InfoTypeDef *input,
                                                     const LL_Buffer_InfoTypeDef *outputs, unsigned int nr_of_outputs,
-                                                    int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                                                    int32_t dma_in, int32_t dma_out,
+                                                    const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
   register const struct ll_aton_reloc_callback *cbs = _network_rt_ctx.cbs;
@@ -335,7 +336,8 @@ int LL_ATON_LIB_Pad_Standard(unsigned char *input, unsigned char *output, unsign
                              uint32_t consecutive_elems, const int32_t *pad_in_offsets_start,
                              const int32_t *pad_in_offsets_end, const int32_t *pad_out_offsets_start,
                              const int32_t *pad_out_offsets_end, const int32_t *out_shape, const int32_t *out_offsets,
-                             size_t tensor_rank, int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                             size_t tensor_rank, int32_t dma_in, int32_t dma_out,
+                             const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
   register const struct ll_aton_reloc_callback *cbs = _network_rt_ctx.cbs;
@@ -355,7 +357,7 @@ int LL_ATON_LIB_Pad_Standard(unsigned char *input, unsigned char *output, unsign
 int LL_ATON_LIB_Pad_4Loop(unsigned char *input_start, unsigned char *input_end, unsigned char *input_limit,
                           unsigned char *output_start, unsigned char *output_end, unsigned char *output_limit,
                           int32_t constant_value, uint8_t nbytes, uint32_t *negative_4loop, uint32_t *positive_4loop,
-                          int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                          int32_t dma_in, int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   register uint32_t _saved_r9;
   register const struct ll_aton_reloc_callback *cbs = _network_rt_ctx.cbs;

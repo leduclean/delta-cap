@@ -1,12 +1,12 @@
 /**
   ******************************************************************************
   * @file    layers_pool.h
-  * @author  AST Embedded Analytics Research Platform
+  * @author  STMicroelectronics
   * @brief   header file of AI platform pooling layers datatypes
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2018 STMicroelectronics.
+  * Copyright (c) 2018 - 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -322,6 +322,23 @@ void forward_mp_hsp0_INT8(ai_layer *pLayer);
 AI_INTERNAL_API
 void forward_mp_hsp1_INT8(ai_layer *pLayer);
 
+/*!
+ * @brief Computes the activations of an integer-quantized max pooling layer
+ *        with int8 I/O. Optimized for HSP_DMA
+ * @ingroup layers_pool
+ * @param layer the pooling (pool) layer
+ */
+AI_INTERNAL_API
+void forward_mp_hsp0D_INT8(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of an integer-quantized max pooling layer
+ *        with int8 I/O. Optimized for HSP_DMA: 1 Step variant for bigger tensors
+ * @ingroup layers_pool
+ * @param layer the pooling (pool) layer
+ */
+AI_INTERNAL_API
+void forward_mp_hsp1D_INT8(ai_layer *pLayer);
 
 /*!
  * @brief Computes the activations of an integer-quantized max pooling layer
@@ -391,6 +408,23 @@ void forward_ap_hsp0_INT8(ai_layer *pLayer);
  */
 AI_INTERNAL_API
 void forward_ap_hsp1_INT8(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of an average pooling layer. Optimized for HSP
+ * @ingroup layers_pool
+ * @param layer the pooling (pool) layer
+ */
+AI_INTERNAL_API
+void forward_ap_hsp0D_INT8(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of an average pooling layer. Optimized for HSP
+ * Variant for larger tensors
+ * @ingroup layers_pool
+ * @param layer the pooling (pool) layer,
+ */
+AI_INTERNAL_API
+void forward_ap_hsp1D_INT8(ai_layer *pLayer);
 
 /*!
  * @brief Computes the activations of an integer-quantized average pooling layer

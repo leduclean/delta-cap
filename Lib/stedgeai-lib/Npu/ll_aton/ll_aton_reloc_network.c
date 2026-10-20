@@ -1,12 +1,12 @@
 /**
  ******************************************************************************
  * @file    ll_aton_reloc_network.c
- * @author  MCD/AIS Team
+ * @author  STMicroelectronics
  * @brief   Implementation of the ATON LL module for relocatable model support
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024, 2025 STMicroelectronics.
+ * Copyright (c) 2024-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -461,7 +461,7 @@ static int _ai_reloc_rt_checking(const struct ai_reloc_bin_hdr *bin)
   }
 #endif
 
-#if defined(LL_ATON_RT_MODE) && (LL_ATON_RT_MODE == LL_ATON_RT_ASYNC)
+#if (LL_ATON_RT_MODE != LL_ATON_RT_POLLING)
   if (!AI_RELOC_RT_ASYNC_MODE(flags))
   {
     AI_RELOC_LOG("AI RELOC ERROR: Not compiled with LL_ATON_RT_ASYNC\r\n");

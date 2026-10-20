@@ -1,12 +1,12 @@
 /**
  ******************************************************************************
  * @file    ll_aton_reloc_network.h
- * @author  MCD/AIS Team
+ * @author  STMicroelectronics
  * @brief   Header file of ATON LL module for relocatable model support
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024, 2025 STMicroelectronics.
+ * Copyright (c) 2024-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -143,36 +143,36 @@ extern "C"
 
     /* ll aton lib */
     int (*ll_aton_lib_concat)(const LL_Buffer_InfoTypeDef *inputs, unsigned int ninputs,
-                              const LL_Buffer_InfoTypeDef *output, unsigned int axis, int dma_in, int dma_out,
+                              const LL_Buffer_InfoTypeDef *output, unsigned int axis, int32_t dma_in, int32_t dma_out,
                               const NN_Instance_TypeDef *nn_instance);
-    int (*ll_aton_lib_cast)(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_TensorInfo_TypeDef *output, int dma_in,
-                            int dma_out, const NN_Instance_TypeDef *nn_instance);
+    int (*ll_aton_lib_cast)(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_TensorInfo_TypeDef *output,
+                            int32_t dma_in, int32_t dma_out, const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_dma_transpose)(const LL_Buffer_InfoTypeDef *input, const uint32_t *input_axes_offsets,
                                      const LL_Buffer_InfoTypeDef *output, const uint32_t *output_axes_offsets,
-                                     const uint8_t *target_pos, const uint8_t *perm_to_use, int dma_in, int dma_out,
-                                     const NN_Instance_TypeDef *nn_instance);
+                                     const uint8_t *target_pos, const uint8_t *perm_to_use, int32_t dma_in,
+                                     int32_t dma_out, const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_softmax)(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_TensorInfo_TypeDef *output,
                                unsigned int axis, int legacy);
     int (*ll_aton_lib_dma_imagetorow)(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                       const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
                                       unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w,
-                                      int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance);
+                                      int32_t dma_in, int32_t dma_out, const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_dma_spacetodepth)(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                         const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                                        unsigned int blocksize_w, int dma_in, int dma_out,
+                                        unsigned int blocksize_w, int32_t dma_in, int32_t dma_out,
                                         const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_dma_rowtoimage)(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                       const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
                                       unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w,
-                                      int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance);
+                                      int32_t dma_in, int32_t dma_out, const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_dma_depthtospace)(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                         const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                                        unsigned int blocksize_w, int dma_in, int dma_out,
+                                        unsigned int blocksize_w, int32_t dma_in, int32_t dma_out,
                                         const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_dma_outputs_slice_splitlike)(const LL_Buffer_InfoTypeDef *input,
                                                    const LL_Buffer_InfoTypeDef *output, uint32_t tot_out_size,
                                                    uint32_t width_in_bytes, uint32_t fheight, uint32_t line_offset,
-                                                   uint8_t n_bits, int dma_in, int dma_out,
+                                                   uint8_t n_bits, int32_t dma_in, int32_t dma_out_out,
                                                    const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_pad_std)(unsigned char *input, unsigned char *output, unsigned char *input_limit,
                                unsigned char *output_limit, const uint32_t *min_shape, uint8_t mode, uint8_t nbytes,
@@ -180,24 +180,25 @@ extern "C"
                                uint32_t consecutive_elems, const int32_t *pad_in_offsets_start,
                                const int32_t *pad_in_offsets_end, const int32_t *pad_out_offsets_start,
                                const int32_t *pad_out_offsets_end, const int32_t *out_shape, const int32_t *out_offsets,
-                               size_t tensor_rank, int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance);
+                               size_t tensor_rank, int32_t dma_in, int32_t dma_out,
+                               const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_pad_4loop)(unsigned char *input_start, unsigned char *input_end, unsigned char *input_limit,
                                  unsigned char *output_start, unsigned char *output_end, unsigned char *output_limit,
                                  int32_t constant_value, uint8_t nbytes, uint32_t *negative_4loop,
-                                 uint32_t *positive_4loop, int dma_in, int dma_out,
+                                 uint32_t *positive_4loop, int32_t dma_in, int32_t dma_out,
                                  const NN_Instance_TypeDef *nn_instance);
 
     /* ll aton sw & lib internals */
     int (*ll_aton_lib_dma_outputs_flat_copy)(const LL_Buffer_InfoTypeDef *input, const LL_Buffer_InfoTypeDef *outputs,
-                                             unsigned int nr_of_outputs, int dma_in, int dma_out,
+                                             unsigned int nr_of_outputs, int32_t dma_in, int32_t dma_out,
                                              const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_dma_outputs_channel_split_aton)(const LL_Buffer_InfoTypeDef *input,
                                                       const LL_Buffer_InfoTypeDef *outputs, unsigned int nr_of_outputs,
-                                                      unsigned int leading_dims, int dma_in, int dma_out,
+                                                      unsigned int leading_dims, int32_t dma_in, int32_t dma_out,
                                                       const NN_Instance_TypeDef *nn_instance);
     int (*ll_aton_lib_dma_outputs_channel_split_batched)(const LL_Buffer_InfoTypeDef *input,
                                                          const LL_Buffer_InfoTypeDef *outputs,
-                                                         unsigned int nr_of_outputs, int dma_in, int dma_out,
+                                                         unsigned int nr_of_outputs, int32_t dma_in, int32_t dma_out,
                                                          const NN_Instance_TypeDef *nn_instance);
   };
 

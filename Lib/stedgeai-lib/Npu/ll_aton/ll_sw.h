@@ -2,12 +2,12 @@
 /**
  ******************************************************************************
  * @file    ll_sw.h
- * @author  SRA Artificial Intelligence & Embedded Architectures
+ * @author  STMicroelectronics
  * @brief   Header file of ll_sw low level software library module.
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024 STMicroelectronics.
+ * Copyright (c) 2021-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -117,7 +117,8 @@ extern "C"
     LL_SW_REDUCELOGSUMEXP,
     LL_SW_SIGN,
     LL_SW_TILE,
-    LL_SW_GELU
+    LL_SW_GELU,
+    LL_SW_TOPK,
   } NodeType;
 
   // ############################ ############################ ###########################
@@ -383,6 +384,7 @@ extern "C"
     General general;
     Tensor_info operand;
     int axis;
+    int input_rank;
   } Gather_sw_info;
 
   typedef struct Tile_sw_info
@@ -390,6 +392,15 @@ extern "C"
     General general;
     int16_t repeats[4];
   } Tile_sw_info;
+
+  typedef struct Topk_sw_info
+  {
+    General general;
+    Tensor_info operand;
+    Tensor_info output_indices;
+    int8_t axis;
+    int8_t largest;
+  } Topk_sw_info;
 
   // ############################ ############################ ###########################
   // ############################  SCALE OFFSET NODES STRUCTS  ###########################
@@ -583,6 +594,7 @@ extern "C"
     General general;
     Tensor_info operand;
     int axis;
+    int input_rank;
   } Gather_integer_sw_info;
 
   typedef struct Tile_integer_sw_info
@@ -658,6 +670,7 @@ extern "C"
   void ll_sw_forward_gather(Gather_sw_info *sw_info);
   void ll_sw_forward_tile(Tile_sw_info *sw_info);
   void ll_sw_forward_softmax(Softmax_sw_info *sw_info);
+  void ll_sw_forward_topk(Topk_sw_info *sw_info);
 
 #ifdef __cplusplus
 }

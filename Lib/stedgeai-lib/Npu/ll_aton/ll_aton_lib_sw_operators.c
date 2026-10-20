@@ -1,12 +1,12 @@
 /**
  ******************************************************************************
  * @file    ll_aton_lib_sw_operators.c
- * @author  SRA Artificial Intelligence & Embedded Architectures
+ * @author  STMicroelectronics
  * @brief   ATON library for pure SW operators
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024 STMicroelectronics.
+ * Copyright (c) 2021-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -643,7 +643,7 @@ static void __ll_aton_lib_transpose_3or4(const __ll_transp_params_t *common_para
 
 int LL_ATON_LIB_Split(const LL_Buffer_InfoTypeDef *input, bool aton_canonical, const LL_Buffer_InfoTypeDef (*outputs)[],
                       uint32_t noutputs, uint32_t rank, uint32_t split_onnx_axis, uint32_t leading_dims, int split_case,
-                      int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                      int32_t dma_in, int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   if (split_onnx_axis >= rank)
   {

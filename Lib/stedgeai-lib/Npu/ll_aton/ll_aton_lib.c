@@ -1,12 +1,12 @@
 /**
  ******************************************************************************
  * @file    ll_aton_lib.c
- * @author  SRA Artificial Intelligence & Embedded Architectures
+ * @author  STMicroelectronics
  * @brief   ATON LL library for basic kernels making use of HW blocks driver.
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024 STMicroelectronics.
+ * Copyright (c) 2021-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -28,6 +28,8 @@
 #include "ll_aton_caches_interface.h"
 #include "ll_aton_lib.h"
 #include "ll_aton_runtime.h"
+
+#ifdef ATON_STRENG_NUM
 
 #if _LL_LIB_DEBUG
 #include <stdio.h>
@@ -130,7 +132,7 @@ static LL_Switch_InitTypeDef __ll_switch_init[] = {
     {LL_Switch_Init_Dest() = ATONN_DSTPORT(STRSWITCH, 0, STRENG, 1, 0),
      LL_Switch_Init_Source(0) = ATONN_SRCPORT(STRSWITCH, 0, STRENG, 0, 0), LL_Switch_Init_Context(0) = 1,
      LL_Switch_Init_Frames(0) = 0}};
-static int __ll_lib_dma_unit_id[] = {1, 0}; /* {<dma_out>, <dma_in>} */
+static int32_t __ll_lib_dma_unit_id[] = {1, 0}; /* {<dma_out>, <dma_in>} */
 static LL_ATON_EnableUnits_InitTypeDef __ll_lib_dma_units[] = {{{STRENG, 1}}, {{STRENG, 0}}};
 static const LL_Streng_TensorInitTypeDef __ll_lib_static_const_dma_in = {
     .dir = 0, .raw = 1, .frame_tot_cnt = 1, .nbits_in = 24, .nbits_out = 24};
@@ -140,6 +142,10 @@ static const LL_Streng_TensorInitTypeDef __ll_lib_static_const_dma_out = {
 /** Helper function(s) **/
 void __ll_lib_error(int err_code, int line, const char *func) // for library internal use only
 {
+  LL_ATON_LIB_UNUSED(err_code);
+  LL_ATON_LIB_UNUSED(line);
+  LL_ATON_LIB_UNUSED(func);
+
 #ifndef NDEBUG
   char *errs;
   switch (err_code)
@@ -219,7 +225,7 @@ static inline void *__ll_lib_get_lower_heap(void)
   return (void *)params;
 }
 
-static inline void __ll_lib_dump_strswitch(int dma_in, int dma_out)
+static inline void __ll_lib_dump_strswitch(int32_t dma_in, int32_t dma_out)
 {
   LL_ATON_LIB_UNUSED(dma_in);
   LL_ATON_LIB_UNUSED(dma_out);
@@ -245,14 +251,16 @@ static inline void __ll_lib_dump_strswitch(int dma_in, int dma_out)
 #endif // DUMP_DEBUG_SW_OPS
 }
 
-static void __ll_lib_strswitch_set_dmas(int dma_in, int dma_out, LL_ATON_RT_EpochBlockItem_t *epoch_block_array)
+static void __ll_lib_strswitch_set_dmas(int32_t dma_in, int32_t dma_out, LL_ATON_RT_EpochBlockItem_t *epoch_block_array)
 {
   __ll_lib_dump_strswitch(dma_in, dma_out); // just for debug purposes
 
   __ll_lib_params_t *params = __ll_lib_get_params();
 
-  __ll_switch_init[0].source0 = __atonn_getSrcPortID(STRSWITCH, 0, STRENG, dma_in, 0);
-  __ll_switch_init[0].dest = __atonn_getDstPortID(STRSWITCH, 0, STRENG, dma_out, 0);
+  PortType src_port = {STRSWITCH, 0, STRENG, dma_in, 0};
+  __ll_switch_init[0].source0 = LL_getSrcPortID(src_port);
+  PortType dst_port = {STRSWITCH, 0, STRENG, dma_out, 0};
+  __ll_switch_init[0].dest = LL_getDstPortID(dst_port);
 
   AccelUnits dma_in_streng = {STRENG, dma_in};
   AccelUnits dma_out_streng = {STRENG, dma_out};
@@ -356,7 +364,6 @@ static inline void __ll_lib_prepare_outputs_epoch(const LL_Buffer_InfoTypeDef *o
   params->g_dma_in = *dma_in;
   params->g_dma_out = *dma_out;
 
-  params->g_dst_o_src = LL_Buffer_addr_start(input);
   params->g_dst_o_src = LL_Buffer_addr_start(input);
   params->g_not_continuous = 0; // signals that source is not read linearly
 
@@ -485,6 +492,8 @@ static void __ll_lib_outputs_memcpy_start(const LL_ATON_RT_EpochBlockItem_t *epo
 
 static inline uint32_t __ll_lib_match_preload_with_busport(size_t size, uint8_t nbytes, uint32_t *min_bytes_to_preload)
 {
+  LL_ATON_LIB_UNUSED(nbytes);
+
   uint32_t _min_bytes_to_preload = *min_bytes_to_preload;
   uint32_t max_nr_preloads_in_busport = (__LL_DMA_INTERNAL_BUSPORT_WIDTH / _min_bytes_to_preload);
 
@@ -1467,8 +1476,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_concat_case3_epoch_block_array[
         .start_epoch_block = __LL_LIB_Concat_Case3_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_Concat_Case3_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -1,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -1,
 #endif
     },
@@ -1481,8 +1490,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_inputs_memcpy_epoch_block_array
         .start_epoch_block = __LL_LIB_Inputs_Memcpy_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_Inputs_Memcpy_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -2,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -2,
 #endif
     },
@@ -1495,8 +1504,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_inputs_batched_memcpy_epoch_blo
         .start_epoch_block = __LL_LIB_Inputs_Batched_Memcpy_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_Inputs_Batched_Memcpy_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -3,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -3,
 #endif
     },
@@ -1509,8 +1518,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_outputs_memcpy_epoch_block_arra
         .start_epoch_block = __LL_LIB_Outputs_Memcpy_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_Outputs_Memcpy_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -4,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -4,
 #endif
     },
@@ -1523,8 +1532,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_outputs_channel_split_aton_epoc
         .start_epoch_block = __LL_LIB_Outputs_Channel_Split_Aton_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_Outputs_Channel_Split_Aton_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -5,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -5,
 #endif
     },
@@ -1537,8 +1546,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_outputs_channel_split_batched_e
         .start_epoch_block = __LL_LIB_Outputs_Channel_Split_Batched_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_Outputs_Channel_Split_Batched_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -6,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -6,
 #endif
     },
@@ -1551,8 +1560,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_simple_oneshot_transfer[] = {
         .start_epoch_block = __LL_LIB_DMA_Transfer_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_DMA_Transfer_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -7,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -7,
 #endif
     },
@@ -1565,8 +1574,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_dma_Pad_memset_epoch_block_arra
         .start_epoch_block = __LL_LIB_DMA_Transfer_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_DMA_Pad_Memset_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -8,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -8,
 #endif
     },
@@ -1579,8 +1588,8 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_dma_Pad_filling_epoch_block_arr
         .start_epoch_block = __LL_LIB_DMA_Pad_Filling_Start_EpochBlock,
         .end_epoch_block = __LL_LIB_DMA_Pad_Filling_End_EpochBlock,
         .flags = EpochBlock_Flags_internal,
-#ifdef LL_ATON_EB_DBG_INFO
         .epoch_num = -9,
+#ifdef LL_ATON_EB_DBG_INFO
         .last_epoch_num = -9,
 #endif
     },
@@ -1601,7 +1610,7 @@ static LL_ATON_RT_EpochBlockItem_t __ll_internal_dma_Pad_filling_epoch_block_arr
  * @note   Must only be called by ATON owner
  */
 static int __LL_ATON_LIB_Async_Memcpy(unsigned char *input_start, unsigned char *input_end, unsigned char *input_limit,
-                                      unsigned char *output_start, int dma_in, int dma_out,
+                                      unsigned char *output_start, int32_t dma_in, int32_t dma_out,
                                       const NN_Instance_TypeDef *nn_instance)
 {
 #ifndef NDEBUG
@@ -1661,7 +1670,7 @@ static int __LL_ATON_LIB_Async_Memcpy(unsigned char *input_start, unsigned char 
  * @param  nbytes number of bytes to copy (-1 means: derive from `inputs` structure)
  */
 static void __LL_ATON_LIB_DMA_Inputs_Memcpy(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
-                                            unsigned char *dst, int nbytes, int dma_in, int dma_out,
+                                            unsigned char *dst, int nbytes, int32_t dma_in, int32_t dma_out,
                                             const NN_Instance_TypeDef *nn_instance)
 {
   /* start epoch block sequence */
@@ -1693,7 +1702,7 @@ static void __LL_ATON_LIB_DMA_Inputs_Memcpy(const LL_LIB_TensorInfo_TypeDef *inp
  * @param  dst destination address
  */
 static void __LL_ATON_LIB_DMA_Inputs_Batched_Memcpy(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
-                                                    unsigned char *dst, int dma_in, int dma_out,
+                                                    unsigned char *dst, int32_t dma_in, int32_t dma_out,
                                                     const NN_Instance_TypeDef *nn_instance)
 {
   uint32_t nbits = inputs[0].nbits;
@@ -1779,7 +1788,8 @@ static void __LL_ATON_LIB_DMA_Inputs_Batched_Memcpy(const LL_LIB_TensorInfo_Type
  */
 static void __LL_ATON_LIB_DMA_Outputs_Memcpy_Helper(const LL_Buffer_InfoTypeDef *input,
                                                     const LL_Buffer_InfoTypeDef *outputs, unsigned int noutputs,
-                                                    int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                                                    int32_t dma_in, int32_t dma_out,
+                                                    const NN_Instance_TypeDef *nn_instance)
 {
   /* start epoch block sequence */
   if (noutputs > 0)
@@ -1816,7 +1826,7 @@ static void __LL_ATON_LIB_DMA_Outputs_Memcpy_Helper(const LL_Buffer_InfoTypeDef 
 static void __LL_ATON_LIB_DMA_Outputs_Channel_Split_Aton_Helper(const LL_Buffer_InfoTypeDef *input,
                                                                 const LL_Buffer_InfoTypeDef *outputs,
                                                                 unsigned int noutputs, unsigned int leading_dims,
-                                                                int dma_in, int dma_out,
+                                                                int32_t dma_in, int32_t dma_out,
                                                                 const NN_Instance_TypeDef *nn_instance)
 {
   LL_ATON_ASSERT(noutputs > 0);
@@ -2061,7 +2071,8 @@ static int __LL_ATON_LIB_Softmax_INT8_legacy(const LL_LIB_TensorInfo_TypeDef *in
  */
 static void __LL_ATON_LIB_DMA_Outputs_Channel_Split_Batched_Helper(const LL_Buffer_InfoTypeDef *input,
                                                                    const LL_Buffer_InfoTypeDef *outputs,
-                                                                   unsigned int noutputs, int dma_in, int dma_out,
+                                                                   unsigned int noutputs, int32_t dma_in,
+                                                                   int32_t dma_out,
                                                                    const NN_Instance_TypeDef *nn_instance)
 {
   uint32_t out_ndims = outputs[0].ndims;
@@ -2448,7 +2459,7 @@ static int __LL_ATON_LIB_Softmax_float_legacy(const LL_LIB_TensorInfo_TypeDef *i
  * @retval Error code
  */
 int __LL_ATON_LIB_DMA_Outputs_Flat_Copy(const LL_Buffer_InfoTypeDef *input, const LL_Buffer_InfoTypeDef *outputs,
-                                        unsigned int nr_of_outputs, int dma_in, int dma_out,
+                                        unsigned int nr_of_outputs, int32_t dma_in, int32_t dma_out,
                                         const NN_Instance_TypeDef *nn_instance)
 {
 #ifndef NDEBUG
@@ -2497,7 +2508,7 @@ int __LL_ATON_LIB_DMA_Outputs_Flat_Copy(const LL_Buffer_InfoTypeDef *input, cons
  */
 int __LL_ATON_LIB_DMA_Outputs_Channel_Split_Aton(const LL_Buffer_InfoTypeDef *input,
                                                  const LL_Buffer_InfoTypeDef *outputs, unsigned int nr_of_outputs,
-                                                 unsigned int leading_dims, int dma_in, int dma_out,
+                                                 unsigned int leading_dims, int32_t dma_in, int32_t dma_out,
                                                  const NN_Instance_TypeDef *nn_instance)
 {
 #ifndef NDEBUG
@@ -2546,7 +2557,8 @@ int __LL_ATON_LIB_DMA_Outputs_Channel_Split_Aton(const LL_Buffer_InfoTypeDef *in
  */
 int __LL_ATON_LIB_DMA_Outputs_Channel_Split_Batched(const LL_Buffer_InfoTypeDef *input,
                                                     const LL_Buffer_InfoTypeDef *outputs, unsigned int nr_of_outputs,
-                                                    int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                                                    int32_t dma_in, int32_t dma_out,
+                                                    const NN_Instance_TypeDef *nn_instance)
 {
 #ifndef NDEBUG
   // LL_ATON_PRINTF("%s() line %d\n", __func__, __LINE__);
@@ -2963,8 +2975,8 @@ static int __LL_ATON_LIB_DMA_Pad_4Loop_Filling(__ll_pad_sw_params_t *common_para
  */
 int LL_ATON_LIB_DMA_ImageToRow(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                               unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w, int dma_in,
-                               int dma_out, const NN_Instance_TypeDef *nn_instance)
+                               unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w, int32_t dma_in,
+                               int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   uint32_t in_batches = inputs[0].shape[TDIM_NKERNELS];
   uint32_t in_fwidth = inputs[0].shape[TDIM_FWIDTH];
@@ -3104,7 +3116,7 @@ LL_ATON_PRINTF("out: b=%d w=%d g=%d c=%d ndims=%d\n",out_batches,out_fwidth,out_
  */
 int LL_ATON_LIB_DMA_SpaceToDepth(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                  const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                                 unsigned int blocksize_w, int dma_in, int dma_out,
+                                 unsigned int blocksize_w, int32_t dma_in, int32_t dma_out,
                                  const NN_Instance_TypeDef *nn_instance)
 {
   return LL_ATON_LIB_DMA_ImageToRow(inputs, ninputs, output, blocksize_h, blocksize_w, blocksize_h, blocksize_w, dma_in,
@@ -3131,8 +3143,8 @@ int LL_ATON_LIB_DMA_SpaceToDepth(const LL_LIB_TensorInfo_TypeDef *inputs, unsign
  */
 int LL_ATON_LIB_DMA_RowToImage(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                               unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w, int dma_in,
-                               int dma_out, const NN_Instance_TypeDef *nn_instance)
+                               unsigned int blocksize_w, unsigned int stride_h, unsigned int stride_w, int32_t dma_in,
+                               int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   int in_batches = inputs[0].shape[TDIM_NKERNELS];
   int in_fwidth = inputs[0].shape[TDIM_FWIDTH];
@@ -3247,7 +3259,7 @@ LL_ATON_PRINTF("out: b=%d w=%d g=%d c=%d ndims=%d\n",out_batches,out_fwidth,out_
  */
 int LL_ATON_LIB_DMA_DepthToSpace(const LL_LIB_TensorInfo_TypeDef *inputs, unsigned int ninputs,
                                  const LL_LIB_TensorInfo_TypeDef *output, unsigned int blocksize_h,
-                                 unsigned int blocksize_w, int dma_in, int dma_out,
+                                 unsigned int blocksize_w, int32_t dma_in, int32_t dma_out,
                                  const NN_Instance_TypeDef *nn_instance)
 {
   return LL_ATON_LIB_DMA_RowToImage(inputs, ninputs, output, blocksize_h, blocksize_w, blocksize_h, blocksize_w, dma_in,
@@ -3256,7 +3268,7 @@ int LL_ATON_LIB_DMA_DepthToSpace(const LL_LIB_TensorInfo_TypeDef *inputs, unsign
 
 int LL_ATON_LIB_DMA_Transpose(const LL_Buffer_InfoTypeDef *input, const uint32_t *input_axes_offsets,
                               const LL_Buffer_InfoTypeDef *output, const uint32_t *output_axes_offsets,
-                              const uint8_t *target_pos, const uint8_t *perm_to_use, int dma_in, int dma_out,
+                              const uint8_t *target_pos, const uint8_t *perm_to_use, int32_t dma_in, int32_t dma_out,
                               const NN_Instance_TypeDef *nn_instance)
 {
   if (LL_Buffer_len(output) < __LL_DMA_MIN_BUFF_LEN)
@@ -3397,7 +3409,7 @@ int LL_ATON_LIB_DMA_Transpose(const LL_Buffer_InfoTypeDef *input, const uint32_t
  * @retval Error code
  */
 int LL_ATON_LIB_Concat(const LL_Buffer_InfoTypeDef *inputs, unsigned int ninputs, const LL_Buffer_InfoTypeDef *output,
-                       unsigned int axis, int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                       unsigned int axis, int32_t dma_in, int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   unsigned int i;
   int k;
@@ -3692,8 +3704,8 @@ LL_ATON_PRINTF("out: b=%d w=%d g=%d c=%d ndims=%d\n",out_batches,out_fwidth,out_
  * @param  nn_instance pointer to network instance (may not be `NULL`)
  * @retval Error code
  */
-int LL_ATON_LIB_Cast(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_TensorInfo_TypeDef *output, int dma_in,
-                     int dma_out, const NN_Instance_TypeDef *nn_instance)
+int LL_ATON_LIB_Cast(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_TensorInfo_TypeDef *output, int32_t dma_in,
+                     int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   LL_ATON_LIB_UNUSED(nn_instance);
 
@@ -3988,7 +4000,7 @@ int LL_ATON_LIB_Softmax(const LL_LIB_TensorInfo_TypeDef *input, const LL_LIB_Ten
  */
 int LL_ATON_LIB_DMA_Outputs_Slice_SplitLike(const LL_Buffer_InfoTypeDef *input, const LL_Buffer_InfoTypeDef *output,
                                             uint32_t tot_out_size, uint32_t width_in_bytes, uint32_t fheight,
-                                            uint32_t line_offset, uint8_t n_bits, int dma_in, int dma_out,
+                                            uint32_t line_offset, uint8_t n_bits, int32_t dma_in, int32_t dma_out,
                                             const NN_Instance_TypeDef *nn_instance)
 {
   // Do actual copy
@@ -4985,7 +4997,7 @@ static int __ll_aton_lib_pad_4loop_filling(__ll_pad_sw_params_t *common_params, 
 int LL_ATON_LIB_Pad_4Loop(unsigned char *input_start, unsigned char *input_end, unsigned char *input_limit,
                           unsigned char *output_start, unsigned char *output_end, unsigned char *output_limit,
                           int32_t constant_value, uint8_t nbytes, uint32_t *negative_4loop, uint32_t *positive_4loop,
-                          int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                          int32_t dma_in, int32_t dma_out, const NN_Instance_TypeDef *nn_instance)
 {
   LL_ATON_ASSERT(dma_in >= 0);
   LL_ATON_ASSERT(dma_out >= 0);
@@ -5029,7 +5041,8 @@ int LL_ATON_LIB_Pad_Standard(unsigned char *input, unsigned char *output, unsign
                              uint32_t consecutive_elems, const int32_t *pad_in_offsets_start,
                              const int32_t *pad_in_offsets_end, const int32_t *pad_out_offsets_start,
                              const int32_t *pad_out_offsets_end, const int32_t *out_shape, const int32_t *out_offsets,
-                             size_t tensor_rank, int dma_in, int dma_out, const NN_Instance_TypeDef *nn_instance)
+                             size_t tensor_rank, int32_t dma_in, int32_t dma_out,
+                             const NN_Instance_TypeDef *nn_instance)
 {
   LL_ATON_ASSERT(dma_in >= 0);
   LL_ATON_ASSERT(dma_out >= 0);
@@ -5196,3 +5209,5 @@ int LL_ATON_LIB_Pad_Standard(unsigned char *input, unsigned char *output, unsign
 
   return LL_ATON_OK;
 }
+
+#endif // ATON_STRENG_NUM

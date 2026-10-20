@@ -1,12 +1,12 @@
 /**
   ******************************************************************************
   * @file    layers_conv2d.h
-  * @author  AST Embedded Analytics Research Platform
+  * @author  STMicroelectronics
   * @brief   header file of AI platform conv2d layers datatypes
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2018 STMicroelectronics.
+  * Copyright (c) 2018 - 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -198,6 +198,10 @@ void forward_gemm(ai_layer* layer);
 AI_INTERNAL_API
 void forward_matmul(ai_layer* layer);
 
+AI_INTERNAL_API
+void forward_matmul_is8os8(ai_layer* layer);
+
+
 /*!
  * @brief Computes the activations of a dense (fully connected) layer.
  * @ingroup layers_conv2d
@@ -285,8 +289,35 @@ void forward_dw_hsp2_sssa8_ch(ai_layer *pLayer);
  * @ingroup layers_conv2d
  * @param layer the convolutional (conv) layer
  */
+
 AI_INTERNAL_API
 void forward_dw_hsp3_sssa8_ch(ai_layer *pLayer);
+/*!
+ * @brief Computes the activations of a int8 quantized DW layer
+ *        for SSSA per channel quantized scheme Optimized for HSP_DMA
+ * @ingroup layers_conv2d
+ * @param layer the convolutional (conv) layer
+ */
+AI_INTERNAL_API
+void forward_dw_hsp1D_sssa8_ch(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of a int8 quantized DW layer
+ *        for SSSA per channel quantized scheme Optimized for HSP_DMA
+ * @ingroup layers_conv2d
+ * @param layer the convolutional (conv) layer
+ */
+AI_INTERNAL_API
+void forward_dw_hsp2D_sssa8_ch(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of a int8 quantized DW layer
+ *        for SSSA per channel quantized scheme Optimized for HSP_DMA
+ * @ingroup layers_conv2d
+ * @param layer the convolutional (conv) layer
+ */
+AI_INTERNAL_API
+void forward_dw_hsp3D_sssa8_ch(ai_layer *pLayer);
 
 /*!
  * @brief Computes the activations of a int8 quantized DW layer
@@ -374,6 +405,35 @@ AI_INTERNAL_API
 void forward_pw_hsp3_sssa8_ch(ai_layer *pLayer);
 
 /*!
+ * @brief Computes the activations of a int8 quantized PW layer
+ *        for SSSA per channel quantized scheme. Optimized for HSP_DMA
+ * @ingroup layers_conv2d
+ * @param layer the convolutional (conv) layer
+ */
+AI_INTERNAL_API
+void forward_pw_hsp2D_sssa8_ch(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of a int8 quantized PW layer
+ *        for SSSA per channel quantized scheme. Optimized for HSP_DMA
+ *        1Step version (nb input channel <= 4)
+ * @ingroup layers_conv2d
+ * @param layer the convolutional (conv) layer
+ */
+AI_INTERNAL_API
+void forward_pw_hsp1D_sssa8_ch(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of a int8 quantized PW layer
+ *        for SSSA per channel quantized scheme. Optimized for HSP_DMA
+ *        3 Step variant
+ * @ingroup layers_conv2d
+ * @param layer the convolutional (conv) layer
+ */
+AI_INTERNAL_API
+void forward_pw_hsp3D_sssa8_ch(ai_layer *pLayer);
+
+/*!
  * @brief Computes the activations of a int8 quantized dilated Conv2d layer
  *        for SSSA per channel quantized scheme (valid padding)
  * @ingroup layers_conv2d
@@ -426,6 +486,22 @@ void forward_conv2d_hsp2_sssa8_ch(ai_layer *pLayer);
 
 AI_INTERNAL_API
 void forward_conv2d_hsp3_sssa8_ch(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of a int8 non dilated Conv2d layer
+ *        for SSSA per channel quantized scheme (valid or same padding)
+ *        Used for configuration supported by HSP_DMA and if HSP_DMA is available
+ * @ingroup layers_conv2d
+ * @param layer the convolutional (conv) layer
+ */
+AI_INTERNAL_API
+void forward_conv2d_hsp1D_sssa8_ch(ai_layer *pLayer);
+
+AI_INTERNAL_API
+void forward_conv2d_hsp2D_sssa8_ch(ai_layer *pLayer);
+
+AI_INTERNAL_API
+void forward_conv2d_hsp3D_sssa8_ch(ai_layer *pLayer);
 
 
 /*!
@@ -698,6 +774,24 @@ void forward_dense_hsp0_sssa8(ai_layer *pLayer);
  */
 AI_INTERNAL_API
 void forward_dense_hsp1_sssa8(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of a integer dense (fully connected) layer
+ *        for SSSA per layer quantized scheme Optimized for HSP_DMA
+ * @ingroup layers_dense
+ * @param layer the dense layer
+ */
+AI_INTERNAL_API
+void forward_dense_hsp0D_sssa8(ai_layer *pLayer);
+
+/*!
+ * @brief Computes the activations of a integer dense (fully connected) layer
+ *        for SSSA per layer quantized scheme Optimized for HSP_DMA, 1Step loop (out_ch)
+ * @ingroup layers_dense
+ * @param layer the dense layer
+ */
+AI_INTERNAL_API
+void forward_dense_hsp1D_sssa8(ai_layer *pLayer);
 
 /*!
  * @brief Computes the activations of a integer dense (fully connected) layer

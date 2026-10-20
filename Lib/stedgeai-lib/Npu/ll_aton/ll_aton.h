@@ -1,12 +1,12 @@
 /**
  ******************************************************************************
  * @file    ll_aton.h
- * @author  SRA Artificial Intelligence & Embedded Architectures
+ * @author  STMicroelectronics
  * @brief   Header file of ATON LL module.
  ******************************************************************************
  * @attention
  *
- * Copyright (c) 2024 STMicroelectronics.
+ * Copyright (c) 2021-2026 STMicroelectronics.
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file
@@ -27,9 +27,7 @@ extern "C"
 #include <stddef.h>
 #include <stdint.h>
 
-#include "ll_aton_attributes.h"
 #include "ll_aton_config.h"
-#include "ll_aton_util.h"
 
 #if (LL_ATON_PLATFORM != LL_ATON_PLAT_EC_TRACE)
 #include "ll_aton_osal.h"
@@ -90,13 +88,20 @@ extern "C"
   {
     STRENG = 0,
     STRENG64,
+    STREAM_CV_CTRL,
+    EPOCHCTRL,
+    INTCTRL,
     CONVACC,
     DECUN,
     ACTIV,
     ARITH,
     POOL,
-    IMC,
     RECBUF,
+    IMC,
+    LOST,
+    VESPRO,
+    VPOOL,
+    RECUR,
   };
 
   typedef struct
@@ -114,7 +119,10 @@ extern "C"
    */
   static inline AccelUnits LL_ATON_GetUnit_From_Cardinal_ID(enum AccelUnitsType type, int id)
   {
-    return (AccelUnits){type, (unsigned short)id};
+    AccelUnits unit;
+    unit.unit_type = type;
+    unit.unit_num = (unsigned short)id;
+    return unit;
   }
 
   /**
@@ -408,15 +416,6 @@ extern "C"
     short pad_val;                 /**< Padding value to be used for padding operation */
   } LL_Poolacc_InitTypeDef;
 
-  /**
-   * @brief Epoch Controller configuration structure
-   */
-  typedef struct
-  {
-    uint32_t blobaddr;         /**< Blob code start address. Must be 8 byte aligned */
-    unsigned int stepmode : 1; /**< Enable step mode. Used for debugging purposes */
-  } LL_EpochCtrl_InitTypeDef;
-
   /** @defgroup LL_POOL Pooling unit configuration functions
    * @{
    */
@@ -424,6 +423,19 @@ extern "C"
   /**
    * @}
    */
+
+  /**
+   * @brief Encryption configuration structure for Streaming Engines and Epoch Controller units
+   */
+  typedef struct LL_Streng_EncryptionTypedef
+  {
+    unsigned int enable;       /**< Enable/disable encryption (0, 1) */
+    unsigned int patch_enable; /**< Enable/disable patch availability in epoch controller blobs (0, 1) */
+    uint64_t encryption_id;    /**< 43 bit Encryption ID */
+    unsigned int rounds;       /**< Number of encryption rounds: 0->12 rounds, 1->9 rounds */
+    unsigned int key_sel;      /**< Bus Interface encryption key selection (0, 1) */
+    unsigned int increment;    /**< Encryption ID increment rate: 0 -> no increment, <n> -> +1 every n frames */
+  } LL_Streng_EncryptionTypedef;
 
   /**
    * @brief Streaming engine configuration structure
@@ -465,12 +477,12 @@ extern "C"
                                        *   If set to zero it's derived from width and batch_offset */
     unsigned int loop_offset;         /**< Offset between frame repetition loops */
     unsigned int frame_loop_cnt;      /**< Number of frames to loop */
-    unsigned int
-        loop_offset2; /**< 2nd level offset between frame repetition loops. If set, has priority over loop_offset */
-    unsigned int frame_loop_cnt2; /**< 2nd level number of frames to loop */
-    unsigned int frame_tot_cnt;   /**< Frame limit */
-    unsigned char nbits_in;       /**< Data size in bits if reading */
-    unsigned char nbits_out;      /**< Data size in bits if writing */
+    unsigned int loop_offset2;        /**< 2nd level offset between frame repetition loops.
+                                       *   If set, has priority over loop_offset */
+    unsigned int frame_loop_cnt2;     /**< 2nd level number of frames to loop */
+    unsigned int frame_tot_cnt;       /**< Frame limit */
+    unsigned char nbits_in;           /**< Data size in bits if reading */
+    unsigned char nbits_out;          /**< Data size in bits if writing */
   } LL_Streng_TensorInitTypeDef;
 
   static inline unsigned char *LL_Streng_addr_start(const LL_Streng_TensorInitTypeDef *conf)
@@ -509,6 +521,7 @@ extern "C"
    * @{
    */
   int LL_Streng_TensorInit(int id, const LL_Streng_TensorInitTypeDef *, int n);
+  int LL_Streng_EncryptionInit(int id, const LL_Streng_EncryptionTypedef *);
   int LL_Streng_ExtSyncInit(int id, LL_Streng_ExtSyncTypedef *);
   int LL_Streng_Wait(uint32_t mask);
   /**
@@ -526,14 +539,19 @@ extern "C"
   enum SwitchUnitsType
   {
     STRSWITCH = 0,
-    STRSWITCH64,
     STRSWITCH_VC,
   };
 
-  extern unsigned int __atonn_getSrcPortID(enum SwitchUnitsType sut, unsigned char su_num, enum AccelUnitsType aut,
-                                           unsigned char au_num, unsigned char port);
-  extern unsigned int __atonn_getDstPortID(enum SwitchUnitsType sut, unsigned char su_num, enum AccelUnitsType aut,
-                                           unsigned char au_num, unsigned char port);
+  typedef struct
+  {
+    enum SwitchUnitsType s;
+    unsigned char s_num;
+    enum AccelUnitsType u;
+    unsigned char u_num;
+    unsigned char port;
+  } PortType;
+  extern unsigned int LL_getSrcPortID(PortType s);
+  extern unsigned int LL_getDstPortID(PortType d);
 
 #if (LL_ATON_PLATFORM != LL_ATON_PLAT_EC_TRACE)
 
@@ -544,47 +562,24 @@ extern "C"
 
   typedef unsigned int DestPort;
 #define ATONN_DSTPORT(S, J, U, I, P) ATON_##S##_DST_OFFSET(J, ATON_##S##_##J##_DST##U##_##I##_##P##_IDX)
-
 // Convert DestPort in ID needed to configure HW
 #define ATONN_DSTPORT_ID(D) (D)
 
 #else
 
-typedef struct
-{
-  enum SwitchUnitsType s;
-  unsigned char s_num;
-  enum AccelUnitsType u;
-  unsigned char u_num;
-  unsigned char port;
-} SourcePort;
+typedef PortType SourcePort;
 #define ATONN_SRCPORT(S, J, U, I, P)                                                                                   \
   {                                                                                                                    \
     .s = S, .s_num = J, .u = U, .u_num = I, .port = P                                                                  \
   }
-static inline unsigned int _atonn_getSrcPortID(SourcePort s)
-{
-  return __atonn_getSrcPortID(s.s, s.s_num, s.u, s.u_num, s.port);
-}
-#define ATONN_SRCPORT_ID(S) _atonn_getSrcPortID(S)
+#define ATONN_SRCPORT_ID(S) LL_getSrcPortID(S)
 
-typedef struct
-{
-  enum SwitchUnitsType s;
-  unsigned char s_num;
-  enum AccelUnitsType u;
-  unsigned char u_num;
-  unsigned char port;
-} DestPort;
+typedef PortType DestPort;
 #define ATONN_DSTPORT(S, J, U, I, P)                                                                                   \
   {                                                                                                                    \
     .s = S, .s_num = J, .u = U, .u_num = I, .port = P                                                                  \
   }
-static inline unsigned int _atonn_getDstPortID(DestPort d)
-{
-  return __atonn_getDstPortID(d.s, d.s_num, d.u, d.u_num, d.port);
-}
-#define ATONN_DSTPORT_ID(D) _atonn_getDstPortID(D)
+#define ATONN_DSTPORT_ID(D) LL_getDstPortID(D)
 
 #endif
 
@@ -615,7 +610,7 @@ static inline unsigned int _atonn_getDstPortID(DestPort d)
  */
 #define ATON_SWITCH_CONTEXT_NUM 2
 
-#if ATON_SWITCH_CONTEXT_NUM == 2
+#if (LL_ATON_PLATFORM != LL_ATON_PLAT_EC_TRACE) && (ATON_SWITCH_CONTEXT_NUM == 2)
 #define LL_Switch_Init_Dest()     .dest
 #define LL_Switch_Init_Source(x)  .source##x
 #define LL_Switch_Init_Context(x) .context##x
@@ -683,7 +678,7 @@ typedef struct
    */
 
   /**
-   * @brief Decompression Unint configuration structure
+   * @brief Decompression Unit configuration structure
    */
   typedef struct
   {
@@ -706,13 +701,44 @@ typedef struct
    * @}
    */
 
+  /**
+   * @brief Epoch Controller configuration structure
+   */
+  typedef struct
+  {
+    uint32_t blobaddr;         /**< Blob code start address. Must be 8 byte aligned */
+    unsigned int stepmode : 1; /**< Enable step mode. Used for debugging purposes */
+  } LL_EpochCtrl_InitTypeDef;
+
   /** @defgroup LL_EPOCHCTRL Epoch controller functions
    * @{
    */
   int LL_EpochCtrl_Init(int id, const LL_EpochCtrl_InitTypeDef *conf);
+  int LL_EpochCtrl_EncryptionInit(int id, const LL_Streng_EncryptionTypedef *conf);
   int LL_EpochCtrl_Step(int id);
   int LL_EpochCtrl_Wait(uint32_t mask);
   unsigned int LL_EpochCtrl_GetBlobSize(uint32_t *eb_addr);
+  /**
+   * @}
+   */
+
+  /**
+   * @brief Bus Interface MiniMMU configuration structure
+   */
+  typedef struct
+  {
+    int entry : 6;         /**< MMU Entry to be configured [0..ATON_BUSIF_MMU_ENTRIES-1] */
+    unsigned int ren : 1;  /**< Enable MMU for reads */
+    unsigned int wen : 1;  /**< Enable MMU for writes*/
+    ll_aton_pointer start; /**< Start address of the virtual memory region to remap */
+    ll_aton_pointer end;   /**< End address of the virtual memory region to remap */
+    ll_aton_pointer base;  /**< Target physical base address */
+  } LL_MiniMmu_InitTypeDef;
+
+  /** @defgroup Mini-MMU configuration functions
+   * @{
+   */
+  int LL_MiniMmu_Init(int id, const LL_MiniMmu_InitTypeDef *conf, unsigned int count);
   /**
    * @}
    */
@@ -740,6 +766,8 @@ typedef struct
   /** @addtogroup ATON Clock Gating functions
    * @{
    */
+  void LL_ATON_EnableAllClocks(void);
+  void LL_ATON_DisableAllClocks(void);
   void LL_ATON_EnableClock(unsigned int clock);
   void LL_ATON_DisableClock(unsigned int clock);
   /**
