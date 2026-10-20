@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "cmsis_os2.h"
 #include "cmw_camera.h"
+#include "stm32n6xx_it.h"
 
 /**
  * @brief Semaphore used for interrupt released by the frame ISR
@@ -174,6 +175,14 @@ int camera_nn_capture(uint8_t *dst)
 	return 0;
 }
 
+/**
+ * @brief Function called by the IRQ handler of the DCMIPP.
+ *
+ * @param pipe The pipe that produced the frame.
+ *
+ * @note This function overrides the default __weak of the CMW_CAMERA 
+ * lib.
+ */
 int CMW_CAMERA_PIPE_FrameEventCallback(uint32_t pipe)
 {
 	switch (pipe) {
@@ -191,22 +200,34 @@ int CMW_CAMERA_PIPE_FrameEventCallback(uint32_t pipe)
 }
 
 /*
- * The default one asserts. A pipe error is an overrun: the DCMIPP couldn't
- * write the frame to RAM in time, typically while the NPU saturates the AXI
- * bus during an inference. The frame is lost, the next one is fine.
- * ponytail: same as ST (app_camerapipeline.c "FIXME"), just counted.
+ * A pipe error is an overrun: happens when a DCMIPP couldn't write the frame to RAM in time,
+ * typically while the NPU saturates the AXI bus during an inference. 
+ *
+ * We just assume this is not a problem, the frame is lost, the next one is fine.
+ *
+ * @note This function overrides the default __weak that just assert(0).
  */
 void CMW_CAMERA_PIPE_ErrorCallback([[maybe_unused]] uint32_t pipe)
 {
-	/*Same as ST(app_camerapipeline.c "FIXME"): the frame is dropped, ignored. */
+	/** The frame is dropped. */
 }
 
+/**
+ * @brief CSI interrupt handler, called from the vector table.
+ * @note This function overrides the default __weak implem declared in 
+ * fsbl ASM startup.
+ */
 void CSI_IRQHandler(void)
 {
 	DCMIPP_HandleTypeDef *hcamera_dcmipp = CMW_CAMERA_GetDCMIPPHandle();
 	HAL_DCMIPP_CSI_IRQHandler(hcamera_dcmipp);
 }
 
+/**
+ * @brief DCMIPP interrupt handler, called from the vector table.
+ * @note This function overrides the default __weak implem declared in 
+ * fsbl ASM startup.
+ */
 void DCMIPP_IRQHandler(void)
 {
 	DCMIPP_HandleTypeDef *hcamera_dcmipp = CMW_CAMERA_GetDCMIPPHandle();
@@ -230,6 +251,11 @@ static const RCC_PeriphCLKInitTypeDef csi_clk_conf = {
  },
 };
 
+/**
+ * @brief Setup the clock of DCMIPP and the csi.
+ * @note This function overrides a __weak stub of the CMW_CAMERA lib.
+ * And is called in @p CMW_CAMERA_Init().
+*/
 HAL_StatusTypeDef
 MX_DCMIPP_ClockConfig([[maybe_unused]] DCMIPP_HandleTypeDef *hdcmipp)
 {

@@ -39,16 +39,6 @@ int camera_run(void);
 void camera_wait_for_frame(void);
 
 /**
- * @brief CSI interrupt handler, called from the vector table.
- */
-void CSI_IRQHandler(void);
-
-/**
- * @brief DCMIPP interrupt handler, called from the vector table.
- */
-void DCMIPP_IRQHandler(void);
-
-/**
  * @brief Blocking capture of a frame at nn input format.
  *
  * @param dst An ai input.

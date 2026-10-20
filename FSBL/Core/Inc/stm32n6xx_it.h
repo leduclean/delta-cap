@@ -57,7 +57,10 @@ void EXTI13_IRQHandler(void);
 void TIM16_IRQHandler(void);
 void USART1_IRQHandler(void);
 /* USER CODE BEGIN EFP */
-
+/* Managed by camera.c 
+ * with CMW lib handler */
+void CSI_IRQHandler (void);
+void DCMIPP_IRQHandler(void);
 /* USER CODE END EFP */
 
 #ifdef __cplusplus
