@@ -21,8 +21,11 @@ struct detection {
  *
  * @retval   0  Well Initialized neural network.
  * @retval -EIO Failed to Initialize hardware component.
+ * @retval -ENOMEM If not enough RAM to install model.
  */
-[[nodiscard]] int ai_init(void);
+[[nodiscard]] int ai_init();
+
+void ai_deinit(void);
 
 /**
  * @brief Gives a pointer to the input buffer.
