@@ -158,9 +158,6 @@ int camera_nn_capture(uint8_t *dst)
 		return -EINVAL;
 	}
 
-	while (osSemaphoreAcquire(nn_frame_sem, 0) == osOK) {
-	}
-
 	SCB_InvalidateDCache_by_Addr(dst, NN_FRAME_SIZE);
 
 	int res = CMW_CAMERA_Start(DCMIPP_PIPE2, dst, CMW_MODE_SNAPSHOT);
