@@ -16,8 +16,9 @@
 
 #define UTIL_LCD_COLOR_TRANSPARENT 0
 
-__attribute__((aligned(32))) //__attribute__((section(".video_data")))
-static uint8_t lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT * 3];
+/* Camera frame, in RAM2 (not zeroed at boot, the DCMIPP fills it) */
+__attribute__((section(".ram2"), aligned(32))) static uint8_t
+	lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT * 3];
 
 __attribute__((aligned(32))) //__attribute__((section(".video_data")))
 static uint8_t lcd_fg_buffer[2][LCD_FG_WIDTH * LCD_FG_HEIGHT * 2];

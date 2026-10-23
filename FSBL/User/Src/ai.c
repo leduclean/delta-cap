@@ -19,9 +19,11 @@
 #define AI_IMAGE_ADDR 0x70380000
 #endif
 
-/** Allocated ram to install the reloc model. */
+/** Allocated ram to install the reloc model, in npuRAM3 (FSBL RAM is full
+ * with the display buffers). Not zeroed at boot, the install writes it. */
 #define EXEC_RAM_SIZE (300 * 1024)
-__attribute__((aligned(8))) static uint8_t exec_ram[EXEC_RAM_SIZE];
+__attribute__((section(".npuram3"),
+	       aligned(32))) static uint8_t exec_ram[EXEC_RAM_SIZE];
 static ll_aton_reloc_config reloc_config = {
 	.exec_ram_addr = (uintptr_t)exec_ram,
 	.exec_ram_size = sizeof(exec_ram),

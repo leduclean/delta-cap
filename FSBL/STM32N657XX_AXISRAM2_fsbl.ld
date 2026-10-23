@@ -38,8 +38,15 @@ ENTRY(Reset_Handler)
 /* Memories definition */
 MEMORY
 {
+  /* AXISRAM1 (starts at 0x34064000 whatever the FLEXMEM config, RM0486 Rev 3 RAMCFG)
+   * + AXISRAM2, up to the FSBL image the boot ROM copies at 0x34180000 (0x400 header) */
+  RAM    (xrw)    : ORIGIN = 0x34064000,   LENGTH = 1136K
   ROM    (xrw)    : ORIGIN = 0x34180400,   LENGTH = 255K
-  RAM    (xrw)    : ORIGIN = 0x34080000,   LENGTH = 1536K
+  /* AXISRAM2 end, after the 255K FSBL image */
+  RAM2   (rw)     : ORIGIN = 0x341C0000,   LENGTH = 256K
+
+  /* npuRAM3, not used by the model (size 0 in training/deploy/stm32n6_reloc.mpool) */
+  NPURAM3 (rw)    : ORIGIN = 0x34200000,   LENGTH = 448K
 }
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM" Ram type memory */
@@ -230,6 +237,20 @@ SECTIONS
   PROVIDE( __bss_start = __tbss_start );
   PROVIDE( __bss_size = __bss_end - __bss_start );
 
+
+  /* Not zeroed at boot: only buffers whose owner initializes them (camera frame) */
+  .ram2 (NOLOAD) :
+  {
+    . = ALIGN(32);
+    *(.ram2)
+  } >RAM2
+
+  /* Not zeroed at boot: only buffers whose owner initializes them (reloc model exec RAM) */
+  .npuram3 (NOLOAD) :
+  {
+    . = ALIGN(32);
+    *(.npuram3)
+  } >NPURAM3
 
   /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
   ._user_heap_stack (NOLOAD) :
