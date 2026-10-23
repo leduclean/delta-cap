@@ -252,9 +252,6 @@ int32_t ai_input_size(void)
 
 int ai_run(void)
 {
-	/* Camera DMA wrote nn_in: push it out of the MCU cache before the NPU reads it */
-	SCB_CleanDCache_by_Addr(nn_in, nn_in_size);
-
 	LL_ATON_RT_RetValues_t ll_aton_ret;
 	LL_ATON_RT_Reset_Network(&nn_instance);
 	do {
