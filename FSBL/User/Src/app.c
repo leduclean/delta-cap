@@ -77,8 +77,9 @@ static void display_task([[maybe_unused]] void *argument)
 		camera_run();
 		camera_wait_for_frame();
 
-		struct detection det[AI_OD_YOLOV2_PP_MAX_BOXES_LIMIT];
-		int n = ai_get_detections(det, AI_OD_YOLOV2_PP_MAX_BOXES_LIMIT);
+		struct detection det[AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT];
+		int n = ai_get_detections(det,
+					  AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT);
 
 		display_add_overlay(det, n);
 		display_draw();

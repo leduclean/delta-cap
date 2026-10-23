@@ -1,5 +1,9 @@
-#include "ai.h"
+#include <stdint.h>
+
 #include "FreeRTOS.h"
+#include "task.h"
+
+#include "ai.h"
 #include "app_config.h"
 #include "app_postprocess.h"
 #include "npu_cache.h"
@@ -7,22 +11,19 @@
 #include "stai.h"
 #include "stai_network.h"
 #include "stm32n6xx_nucleo_xspi.h"
-#include "task.h"
-#include <stdint.h>
 
 STAI_NETWORK_CONTEXT_DECLARE(network_context, STAI_NETWORK_CONTEXT_SIZE)
 
-static od_yolov2_pp_static_param_t pp_params;
+static od_st_yolox_pp_static_param_t pp_params;
 static od_pp_out_t pp_output;
 
 static stai_size nbr_outputs;
-static_assert(STAI_NETWORK_OUT_NUM == 1,
-	      "There should be a single output to the nn");
-static stai_ptr nn_out;
-static int32_t nn_out_size;
+/* Each pointer correspondd to an out class */
+static stai_ptr nn_out[STAI_NETWORK_OUT_NUM];
+static int32_t nn_out_size[STAI_NETWORK_OUT_NUM];
 
 static int last_n;
-static struct detection last_det[AI_OD_YOLOV2_PP_MAX_BOXES_LIMIT];
+static struct detection last_det[AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT];
 
 static stai_size nbr_inputs;
 static stai_ptr nn_in;
@@ -56,11 +57,14 @@ int ai_run(void)
 		return -EIO;
 	}
 
+	for (int i = 0; i < STAI_NETWORK_OUT_NUM; i++) {
+		SCB_InvalidateDCache_by_Addr(&nn_out, nn_out_size[i]);
+	}
+
 	if (app_postprocess_run((void **)&nn_out, nbr_outputs, &pp_output,
 				&pp_params) != AI_OD_POSTPROCESS_ERROR_NO) {
 		return -EIO;
 	}
-	SCB_InvalidateDCache_by_Addr(nn_out, nn_out_size);
 
 	taskENTER_CRITICAL();
 	int n = pp_output.nb_detect;
@@ -165,7 +169,8 @@ static void npu_clk_enable(void)
 		return -EIO;
 	}
 
-	res = stai_network_get_outputs(network_context, &nn_out, &nbr_outputs);
+	res = stai_network_get_outputs(network_context, &nn_out[0],
+				       &nbr_outputs);
 	if (res != STAI_SUCCESS) {
 		return -EIO;
 	}
@@ -175,7 +180,10 @@ static void npu_clk_enable(void)
 
 static void extract_info(const stai_network_info *info)
 {
-	nn_out_size = info->outputs[0].size_bytes;
+	for (int i = 0; i < STAI_NETWORK_OUT_NUM; i++) {
+		nn_out_size[i] = info->outputs[i].size_bytes;
+	}
+
 	nn_in_size = info->inputs[0].size_bytes;
 }
 
