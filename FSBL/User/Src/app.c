@@ -29,12 +29,19 @@ const osThreadAttr_t display_task_attr = {
 	.stack_size = 256 * 4
 };
 
+/* Static: too big for the 8 KB FreeRTOS heap.*/
+static StaticTask_t ai_task_cb; /* Needed for static allocation */
+static uint64_t ai_task_stack[4096 / sizeof(uint64_t)];
+
 const osThreadAttr_t ai_task_attr = {
 	.name = "ai",
 	/* Since ai is high cost task we need to put it with low priority
     * to ensure that we will display when a new frame arrives*/
 	.priority = (osPriority_t)osPriorityBelowNormal,
-	.stack_size = 256 * 4
+	.cb_mem = &ai_task_cb,
+	.cb_size = sizeof(ai_task_cb),
+	.stack_mem = ai_task_stack,
+	.stack_size = sizeof(ai_task_stack),
 };
 
 #define MAX_CMD_SIZE 64

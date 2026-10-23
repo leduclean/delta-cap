@@ -22,6 +22,10 @@
 #include "stm32n6xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+
+#include "FreeRTOS.h"
+#include "task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -86,7 +90,11 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+	const char *task = xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED ?
+				   pcTaskGetName(NULL) :
+				   "-";
+	printf("HardFault: CFSR=0x%08lx BFAR=0x%08lx task=%s\r\n", SCB->CFSR,
+	       SCB->BFAR, task);
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
