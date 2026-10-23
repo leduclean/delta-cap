@@ -188,6 +188,9 @@ static inline stai_tensor tensor_from_info(const LL_Buffer_InfoTypeDef *info)
 		return -ENOMEM;
 	}
 
+	/*WARNING: Before the install: it creates the OSAL cache mutex the install takes */
+	LL_ATON_RT_RuntimeInit();
+
 	res = ll_aton_reloc_install(AI_IMAGE_ADDR, &reloc_config, &nn_instance);
 	if (res != AI_RELOC_RT_ERR_NONE) {
 		return -EIO;
@@ -203,7 +206,6 @@ static inline stai_tensor tensor_from_info(const LL_Buffer_InfoTypeDef *info)
 		return res;
 	}
 
-	LL_ATON_RT_RuntimeInit();
 	LL_ATON_RT_Init_Network(&nn_instance);
 
 	return 0;
