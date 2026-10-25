@@ -140,7 +140,7 @@ int camera_start_screen_pipe(uint8_t *pbuff)
 /**
  * @brief Double buffer ai entries filled by the camera driver.
  */
-__attribute__((aligned(32))) static uint8_t nn_buf[2][NN_FRAME_SIZE];
+alignas(32) static uint8_t nn_buf[2][NN_FRAME_SIZE];
 
 /**
  * @brief Flag indicating the current ready double buffer index.
