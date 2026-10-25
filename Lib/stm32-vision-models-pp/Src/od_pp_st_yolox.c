@@ -309,16 +309,25 @@ int32_t st_yolox_pp_level_decode_and_store_is8(int8_t *pInbuff,
       {
         for (int32_t anch = 0; anch < pInput_static_param->nb_anchors; ++anch)
         {
+          /* read and activate objectness */
+          float32_t dequant;
+          dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS] - raw_zp) * raw_scale;
+          float32_t prob = vision_models_sigmoid_f(dequant);
+
+          /* Delta patch (not upstream ST): score = softmax_max * prob <= prob, so a box
+           * under the threshold can't pass, skip its class max + 80-class softmax (~80 ms -> ~1 ms) */
+          if (prob < pInput_static_param->conf_threshold)
+          {
+            el_offset += anch_stride;
+            continue;
+          }
+
           vision_models_maxi_p_is8ou8(&pInbuff[el_offset + AI_YOLOV2_PP_CLASSPROB],
                                     pInput_static_param->nb_classes,
                                     anch,
                                     &best_score_s8,
                                     &class_index_u8,
                                     1);
-          /* read and activate objectness */
-          float32_t dequant;
-          dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS] - raw_zp) * raw_scale;
-          float32_t prob = vision_models_sigmoid_f(dequant);
 
           /* activate array of classes pred */
           /* in placce softmax */
