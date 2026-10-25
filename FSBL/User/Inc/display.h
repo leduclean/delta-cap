@@ -4,7 +4,6 @@
 
 #include "ai.h"
 
-#define SCREEN_FPS 5
 #define SCREEN_WIDTH (320)
 #define SCREEN_HEIGHT (240)
 

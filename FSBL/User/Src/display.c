@@ -1,3 +1,4 @@
+#include "camera.h"
 #include <string.h>
 
 #include "FreeRTOS.h"
@@ -45,7 +46,7 @@ static SCRL_ScreenConfig screen_config = {
 	.format =
 		SCRL_RGB565, /* Use SCRL_RGB565 if host support this format to reduce cpu load */
 	.address = screen_buffer,
-	.fps = SCREEN_FPS,
+	.fps = CAMERA_FPS,
 };
 
 int display_init(void)
