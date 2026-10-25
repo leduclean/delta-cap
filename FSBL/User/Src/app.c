@@ -63,12 +63,21 @@ static void console_task([[maybe_unused]] void *argument)
 
 static void ai_task([[maybe_unused]] void *argument)
 {
+	int res = camera_start_nn_pipe();
+	if (res < 0) {
+		printf("NN pipe start failed: %d\r\n", res);
+		Error_Handler();
+	}
 	for (;;) {
-		int res = camera_nn_capture(ai_input());
-		if (res == 0)
-			res = ai_run();
-		if (res < 0)
-			printf("ai: error %d\r\n", res);
+		uint8_t *frame = camera_get_nn_frame();
+		if (!frame) {
+			printf("Frame took too much time to come");
+			continue;
+		}
+		res = ai_run(frame);
+		if (res < 0) {
+			printf("AI error: %d\r\n", res);
+		}
 	}
 }
 

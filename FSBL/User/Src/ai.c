@@ -6,6 +6,7 @@
 #include "ai.h"
 #include "app_config.h"
 #include "app_postprocess.h"
+#include "camera.h"
 #include "ll_aton_rt_user_api.h"
 #include "npu_cache.h"
 #include "od_pp_output_if.h"
@@ -104,9 +105,10 @@ static void npu_clk_enable(void)
 		return -EIO;
 	}
 
-	/* High Speed Low voltage fuse seems not programmed, hence the 1.8V xSPI IOs can't do 200 MHz.
-     * Run at 200/(1+1) = 100 MHz: weight reads 2x slower*/
-	if (HAL_XSPI_SetClockPrescaler(&hxspi_nor[0], 1) != HAL_OK) {
+	/* HSLV_VDDIO3 fuse (OTP124 bit 15) not programmed: the 1.8V xSPI IOs run in
+	 * degraded mode (RM0486), 100 MHz gave random UNDEFINSTR faults in XIP code.
+	 * Run at 200/(3+1) = 50 MHz: weight reads 4x slower */
+	if (HAL_XSPI_SetClockPrescaler(&hxspi_nor[0], 3) != HAL_OK) {
 		return -EIO;
 	}
 
@@ -240,18 +242,21 @@ void ai_deinit(void)
 	LL_ATON_RT_RuntimeDeInit();
 }
 
-void *ai_input(void)
-{
-	return nn_in;
-}
-
 int32_t ai_input_size(void)
 {
 	return nn_in_size;
 }
 
-int ai_run(void)
+static void load_input(const uint8_t *frame)
 {
+	SCB_InvalidateDCache_by_Addr((void *)frame, NN_FRAME_SIZE);
+	memcpy(nn_in, frame, NN_FRAME_SIZE);
+	SCB_CleanDCache_by_Addr(nn_in, NN_FRAME_SIZE);
+}
+
+int ai_run(const uint8_t *frame)
+{
+	load_input(frame);
 	LL_ATON_RT_RetValues_t ll_aton_ret;
 	LL_ATON_RT_Reset_Network(&nn_instance);
 	do {
@@ -272,7 +277,11 @@ int ai_run(void)
 	}
 
 	taskENTER_CRITICAL();
+	/* ST's NMS caps max_boxes_limit per class, not in total: up to 80x10 boxes */
 	int n = pp_output.nb_detect;
+	if (n > AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT) {
+		n = AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT;
+	}
 	for (int i = 0; i < n; i++) {
 		const od_pp_outBuffer_t *b = &pp_output.pOutBuff[i];
 		last_det[i] = (struct detection){ .h = b->height,

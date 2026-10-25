@@ -136,6 +136,21 @@ int camera_init()
 int camera_start(uint8_t *display_pipe_dst, uint32_t cam_mode)
 {
 	return CMW_CAMERA_Start(DCMIPP_PIPE1, display_pipe_dst, cam_mode);
+
+/**
+ * @brief Double buffer ai entries filled by the camera driver.
+ */
+__attribute__((aligned(32))) static uint8_t nn_buf[2][NN_FRAME_SIZE];
+
+/**
+ * @brief Flag indicating the current ready double buffer index.
+ */
+static volatile uint8_t nn_ready;
+
+int camera_start_nn_pipe(void)
+{
+	return CMW_CAMERA_DoubleBufferStart(DCMIPP_PIPE2, nn_buf[0], nn_buf[1],
+					    CMW_MODE_CONTINUOUS);
 }
 
 int camera_run(void)
@@ -147,33 +162,25 @@ void camera_wait_for_frame(void)
 {
 	osSemaphoreAcquire(frame_sem, osWaitForever);
 }
+/**
+ * @name Timeouts for blocking function waiting for an available frame.
+ * @{
+ */
+#define FRAME_TIMEOUT pdMS_TO_TICKS(5 * 1000 / CAMERA_FPS) /**< 5 frame. */
+#define NN_FRAME_TIMEOUT (FRAME_TIMEOUT / 2) /**< Double buffering timeout. */
+/** @} */
 
-int camera_nn_capture(uint8_t *dst)
-{
-	if (dst == NULL || ((uintptr_t)dst % 32U) != 0U) {
-		return -EINVAL;
-	}
-
-	if (nn_frame_sem == NULL) {
-		return -EINVAL;
-	}
-
-	SCB_InvalidateDCache_by_Addr(dst, NN_FRAME_SIZE);
-
-	int res = CMW_CAMERA_Start(DCMIPP_PIPE2, dst, CMW_MODE_SNAPSHOT);
-
-	if (res < 0) {
-		return res;
-	}
-
-	if (osSemaphoreAcquire(nn_frame_sem, 2000U) != osOK) {
 		return -ETIMEDOUT;
 	}
-
-	// Actualize cache after DMA write.
-	SCB_InvalidateDCache_by_Addr(dst, NN_FRAME_SIZE);
-
 	return 0;
+}
+
+uint8_t *camera_get_nn_frame(void)
+{
+	if (osSemaphoreAcquire(nn_frame_sem, NN_FRAME_TIMEOUT) != osOK) {
+		return NULL;
+	}
+	return nn_buf[nn_ready];
 }
 
 /**
@@ -191,6 +198,7 @@ int CMW_CAMERA_PIPE_FrameEventCallback(uint32_t pipe)
 		osSemaphoreRelease(frame_sem);
 		break;
 	case DCMIPP_PIPE2:
+		nn_ready ^= 1;
 		osSemaphoreRelease(nn_frame_sem);
 		break;
 	default:

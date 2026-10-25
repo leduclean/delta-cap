@@ -45,9 +45,10 @@ int32_t ai_input_size(void);
  * @brief Run an inference on the provided input stream 
  * and post process the results.
  *
+ * @param frame The input frame received by the camera.
  * @return 0 on SUCCESS, -EIO on failure. 
  */
-[[nodiscard]] int ai_run();
+[[nodiscard]] int ai_run(const uint8_t *frame);
 
 /**
  * @brief Gets the detections structure out of the last
