@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 
+//TODO try 30 FPS
 #define CAMERA_FPS 25
 #define CAMERA_FLIP CMW_MIRRORFLIP_NONE
 
@@ -18,13 +19,12 @@
 [[nodiscard]] int camera_init(void);
 
 /**
- * @brief Start the camera giving it a pipe to send data.
+ * @brief Start the camera pipe of the screen giving it the dst buffer.
  *
- * @param display_pipe_dst The pipe destination buffer.
- * @param cam_mode The mode of the camera.
+ * @param pbuff The pipe destination buffer.
  * @return 0 on SUCCESS, error code < 0 on failure.
  */
-[[nodiscard]] int camera_start(uint8_t *display_pipe_dst, uint32_t cam_mode);
+[[nodiscard]] int camera_start_screen_pipe(uint8_t *pbuff);
 
 /**
  * @brief Start the camera pipe of the screen.
@@ -41,9 +41,12 @@
 int camera_run(void);
 
 /**
- * @brief Wait for an available frame.
+ * @brief Wait for an available displframe.
+ *
+ * @retval -EOK
+ * @retval -ETIMEDOUT If the frame was too long to come.
  */
-void camera_wait_for_frame(void);
+[[nodiscard]] int camera_wait_screen_frame(void);
 
 /**
  * @brief Blocking function that wait for an available nn frame.

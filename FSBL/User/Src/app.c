@@ -1,6 +1,7 @@
 #include <app_config.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stm32n6xx_hal.h>
 
@@ -83,7 +84,7 @@ static void ai_task([[maybe_unused]] void *argument)
 
 static void display_task([[maybe_unused]] void *argument)
 {
-	int res = camera_start(display_get_bg_buff(), CMW_MODE_CONTINUOUS);
+	int res = camera_start_screen_pipe(display_get_bg_buff());
 	if (res < 0) {
 		printf("camera_start failed: %d\r\n", res);
 		Error_Handler();
@@ -91,13 +92,16 @@ static void display_task([[maybe_unused]] void *argument)
 
 	for (;;) {
 		camera_run();
-		camera_wait_for_frame();
+		res = camera_wait_screen_frame();
+		if (res < 0) {
+			printf("screen frame timeout\n");
+			continue;
+		}
 
-		struct detection det[AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT];
-		int n = ai_get_detections(det,
-					  AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT);
+		struct ai_result result;
+		ai_get_result(&result);
 
-		display_add_overlay(det, n);
+		display_add_overlay(&result);
 		display_draw();
 	}
 }

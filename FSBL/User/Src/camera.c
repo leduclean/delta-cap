@@ -1,13 +1,79 @@
 #include <assert.h>
 #include <errno.h>
 
-#include "display.h"
-
 #include "FreeRTOS.h"
 #include "camera.h"
 #include "cmsis_os2.h"
 #include "cmw_camera.h"
+#include "display.h"
 #include "stm32n6xx_it.h"
+
+/**
+ * @brief DCMIPP prepocessing conf for the screen pipe.
+ */
+static CMW_DCMIPP_Conf_t screen_conf = {
+	.output_width = SCREEN_WIDTH,
+	.output_height = SCREEN_HEIGHT,
+	.output_format = DCMIPP_PIXEL_PACKER_FORMAT_RGB888_YUV444_1,
+
+	.output_bpp = 3,
+	.enable_swap = 1, /* RGB */
+	.enable_gamma_conversion = 0,
+
+	.mode = CMW_Aspect_ratio_fullscreen,
+};
+
+static int _setup_pipe(void)
+{
+	int res;
+
+	uint32_t pitch;
+	res = CMW_CAMERA_SetPipeConfig(DCMIPP_PIPE1, &screen_conf, &pitch);
+	if (res < 0) {
+		return res;
+	}
+	assert(screen_conf.output_width * screen_conf.output_bpp == pitch);
+
+	return pitch;
+}
+
+/**
+ * @brief DCMIPP prepocessing conf for the nn pipe.
+ */
+static CMW_DCMIPP_Conf_t nn_conf = {
+	.output_width = NN_WIDTH,
+	.output_height = NN_HEIGHT,
+	.output_format = DCMIPP_PIXEL_PACKER_FORMAT_RGB888_YUV444_1,
+
+	.output_bpp = 3,
+	.enable_swap = 1, /* RGB */
+	.enable_gamma_conversion = 0,
+
+	.mode = CMW_Aspect_ratio_crop,
+
+};
+
+static int _setup_nn_pipe(void)
+{
+	int res;
+
+	uint32_t pitch;
+	res = CMW_CAMERA_SetPipeConfig(DCMIPP_PIPE2, &nn_conf, &pitch);
+	if (res < 0) {
+		return res;
+	}
+
+	if (pitch != NN_WIDTH * NN_BPP) {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static CMW_CameraInit_t cam_conf = {
+	.fps = CAMERA_FPS,
+	.mirror_flip = CAMERA_FLIP,
+};
 
 /**
  * @brief Semaphore that indicates that a frame is available in 
@@ -32,73 +98,6 @@ static const osSemaphoreAttr_t nn_frame_sem_attr = {
 	.cb_mem = &nn_frame_sem_cb,
 	.cb_size = sizeof(nn_frame_sem_cb),
 };
-
-/* Leave the driver use the default resolution */
-#define CAMERA_WIDTH 0
-#define CAMERA_HEIGHT 0
-
-static CMW_CameraInit_t cam_conf = {
-	.width = CAMERA_WIDTH, /* 0 = filled in by the camera manager */
-	.height = CAMERA_HEIGHT,
-	.fps = CAMERA_FPS,
-	.mirror_flip = CAMERA_FLIP,
-};
-
-static CMW_DCMIPP_Conf_t p_conf = {
-	.output_width = SCREEN_WIDTH,
-	.output_height = SCREEN_HEIGHT,
-	.output_format = DCMIPP_PIXEL_PACKER_FORMAT_RGB888_YUV444_1,
-
-	.output_bpp = 3,
-	.enable_swap = 1, /* RGB */
-	.enable_gamma_conversion = 0,
-
-	.mode = CMW_Aspect_ratio_fullscreen,
-};
-
-static CMW_DCMIPP_Conf_t nn_conf = {
-	.output_width = NN_WIDTH,
-	.output_height = NN_HEIGHT,
-	.output_format = DCMIPP_PIXEL_PACKER_FORMAT_RGB888_YUV444_1,
-
-	.output_bpp = 3,
-	.enable_swap = 1, /* RGB */
-	.enable_gamma_conversion = 0,
-
-	.mode = CMW_Aspect_ratio_crop,
-
-};
-
-static int _setup_pipe(void)
-{
-	int res;
-
-	uint32_t pitch;
-	res = CMW_CAMERA_SetPipeConfig(DCMIPP_PIPE1, &p_conf, &pitch);
-	if (res < 0) {
-		return res;
-	}
-	assert(p_conf.output_width * p_conf.output_bpp == pitch);
-
-	return pitch;
-}
-
-static int _setup_nn_pipe(void)
-{
-	int res;
-
-	uint32_t pitch;
-	res = CMW_CAMERA_SetPipeConfig(DCMIPP_PIPE2, &nn_conf, &pitch);
-	if (res < 0) {
-		return res;
-	}
-
-	if (pitch != NN_WIDTH * NN_BPP) {
-		return -EINVAL;
-	}
-
-	return 0;
-}
 
 int camera_init()
 {
@@ -133,9 +132,10 @@ int camera_init()
 	return 0;
 }
 
-int camera_start(uint8_t *display_pipe_dst, uint32_t cam_mode)
+int camera_start_screen_pipe(uint8_t *pbuff)
 {
-	return CMW_CAMERA_Start(DCMIPP_PIPE1, display_pipe_dst, cam_mode);
+	return CMW_CAMERA_Start(DCMIPP_PIPE1, pbuff, CMW_MODE_CONTINUOUS);
+}
 
 /**
  * @brief Double buffer ai entries filled by the camera driver.
@@ -158,10 +158,6 @@ int camera_run(void)
 	return CMW_CAMERA_Run();
 }
 
-void camera_wait_for_frame(void)
-{
-	osSemaphoreAcquire(frame_sem, osWaitForever);
-}
 /**
  * @name Timeouts for blocking function waiting for an available frame.
  * @{
@@ -170,6 +166,9 @@ void camera_wait_for_frame(void)
 #define NN_FRAME_TIMEOUT (FRAME_TIMEOUT / 2) /**< Double buffering timeout. */
 /** @} */
 
+int camera_wait_screen_frame(void)
+{
+	if (osSemaphoreAcquire(frame_sem, FRAME_TIMEOUT) != osOK) {
 		return -ETIMEDOUT;
 	}
 	return 0;
