@@ -1,3 +1,5 @@
+link_libraries(stm32cubemx)
+
 file(
     GLOB_RECURSE CAMERA_SRC
     CONFIGURE_DEPENDS
@@ -21,12 +23,7 @@ target_include_directories(
         isp
 )
 target_compile_definitions(camera PUBLIC STM32N6570_NUCLEO_REV)
-target_link_libraries(
-    camera
-    PUBLIC
-        stm32cubemx
-        m
-)
+target_link_libraries(camera PUBLIC m)
 
 file(
     GLOB LCD_SRC
@@ -63,12 +60,7 @@ target_compile_definitions(
         UVC_LIB_USE_USBX
         USBL_PACKET_PER_MICRO_FRAME=3
 )
-target_link_libraries(
-    screenl
-    PUBLIC
-        lcd
-        stm32cubemx
-)
+target_link_libraries(screenl PUBLIC lcd)
 
 #TODO: Clean This lib declaration
 
@@ -111,19 +103,16 @@ target_compile_definitions(
     ai
     PUBLIC
         LL_ATON_PLATFORM=LL_ATON_PLAT_STM32N6
-        LL_ATON_OSAL=LL_ATON_OSAL_FREERTOS # ai task blocks on a semaphore given by the NPU IRQ
-        APP_HAS_PARALLEL_NETWORKS=0 # a single network
+        # ai task blocks on a semaphore given by the NPU IRQ
+        LL_ATON_OSAL=LL_ATON_OSAL_FREERTOS
+        # a single network
+        APP_HAS_PARALLEL_NETWORKS=0
         LL_ATON_RT_MODE=LL_ATON_RT_ASYNC
         LL_ATON_RT_RELOC
         LL_ATON_EB_DBG_INFO
         LL_ATON_SW_FALLBACK
 )
-target_link_libraries(
-    ai
-    PUBLIC
-        stm32cubemx
-        m
-) # m: exp() in ll_aton_lib.c softmax
+target_link_libraries(ai PUBLIC m) # m: exp() in ll_aton_lib.c softmax
 
 file(
     GLOB_RECURSE AI_PP_SRC
@@ -143,8 +132,11 @@ target_link_libraries(
     ai-pp
     PUBLIC
         ai
-        stm32cubemx
         m
 )
 target_compile_options(ai-pp PRIVATE -O2)
 target_compile_options(ai PRIVATE -O2)
+
+file(GLOB STEPPER_SRC CONFIGURE_DEPENDS stepper-ihm02/*.c)
+add_library(stepper STATIC ${STEPPER_SRC})
+target_include_directories(stepper PUBLIC stepper-ihm02/)
