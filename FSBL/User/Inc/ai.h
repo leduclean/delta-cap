@@ -1,4 +1,5 @@
 #pragma once
+#include "app_config.h"
 #include <stdint.h>
 
 /**
@@ -11,7 +12,18 @@ struct detection {
 	float w;
 	float h;
 	float conf;
-	int cls;
+	int cls; /**< Class id, use this for sorting */
+	const char *label; /**< Points into the static classes_table, display only */
+};
+
+/**
+ * @class ai_result
+ * @brief Snapshot of the last inference.
+ */
+struct ai_result {
+	struct detection det[AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT];
+	int n; /**< Number of valid entries in det */
+	uint32_t ms; /**< NPU + post process time */
 };
 
 /**
@@ -26,13 +38,6 @@ struct detection {
 [[nodiscard]] int ai_init();
 
 void ai_deinit(void);
-
-/**
- * @brief Gives a pointer to the input buffer.
- * @note  You will need this pointer to give the input 
- * to the neural network.
- */
-void *ai_input(void);
 
 /**
  * @brief Gives the input size of the input buffer.
@@ -51,11 +56,8 @@ int32_t ai_input_size(void);
 [[nodiscard]] int ai_run(const uint8_t *frame);
 
 /**
- * @brief Gets the detections structure out of the last
- * inference run.
+ * @brief Gets the result of the last inference run.
  *
- * @param out The detection table to fill.
- * @param max The max number of detections to fill.
- * @return The number of detections readed.
+ * @param[out] out The result to fill.
  */
-int ai_get_detections(struct detection *out, int max);
+void ai_get_result(struct ai_result *out);

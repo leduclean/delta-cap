@@ -156,32 +156,33 @@ static void display_draw_detections(const struct detection *detections,
 		unsigned score = (unsigned)(d->conf * 100.0f + 0.5f);
 
 		UTIL_LCD_SetTextColor(UTIL_LCD_COLOR_GREEN);
-		UTIL_LCDEx_PrintfAt(sx0, label_y, LEFT_MODE, "cls %d %u%%",
-				    d->cls, score);
+		UTIL_LCDEx_PrintfAt(sx0, label_y, LEFT_MODE, "cls %s %u%%",
+				    d->label, score);
 	}
 
 	UTIL_LCD_SetTextColor(UTIL_LCD_COLOR_WHITE);
 }
 
-static int display_count = 0;
+static inline void display_draw_inf_time(int inf_time)
+{
+	UTIL_LCD_SetTextColor(UTIL_LCD_COLOR_CYAN);
+	UTIL_LCDEx_PrintfAt(0, 0, RIGHT_MODE, "NPU+PP: %lu ms", inf_time);
+}
 
-int display_add_overlay(struct detection *det, int count)
+int display_add_overlay(const struct ai_result *result)
 {
 	int res = overlay_begin_draw();
 	if (res < 0) {
 		return res;
 	}
 
-	/* Effacer les dessins de la frame precedente */
+	/* Clear the previous overlay */
 	UTIL_LCD_Clear(UTIL_LCD_COLOR_TRANSPARENT);
 
-	/* Affichage du compteur existant */
-	UTIL_LCDEx_PrintfAt(0, LINE(1), CENTER_MODE, "display count %d",
-			    display_count++);
+	/* Add rectangle on the overlay */
+	display_draw_detections(result->det, result->n);
+	display_draw_inf_time(result->ms);
 
-	/* Dessiner les rectangles sur le calque */
-	display_draw_detections(det, count);
-
-	/* Afficher le nouveau calque */
+	/* Display the new overlay */
 	return overlay_swap();
 }

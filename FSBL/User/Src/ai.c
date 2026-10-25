@@ -53,9 +53,7 @@ static int32_t nn_out_size[AI_YOLOX_OUT_NUM];
 
 static stai_ptr nn_in;
 static int32_t nn_in_size;
-
-static int last_n;
-static struct detection last_det[AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT];
+static struct ai_result last;
 
 /**
  * @brief Enable and reset the clk of npu cache
@@ -247,6 +245,18 @@ int32_t ai_input_size(void)
 	return nn_in_size;
 }
 
+/** Declare the static classes_table for labeling */
+CLASSES_TABLE;
+
+static const char *get_label(int id)
+{
+	if (id < 0 || id >= NB_CLASSES) {
+		return "unknown";
+	}
+
+	return classes_table[id];
+}
+
 static void load_input(const uint8_t *frame)
 {
 	SCB_InvalidateDCache_by_Addr((void *)frame, NN_FRAME_SIZE);
@@ -259,6 +269,8 @@ int ai_run(const uint8_t *frame)
 	load_input(frame);
 	LL_ATON_RT_RetValues_t ll_aton_ret;
 	LL_ATON_RT_Reset_Network(&nn_instance);
+
+	uint32_t start = HAL_GetTick();
 	do {
 		ll_aton_ret = LL_ATON_RT_RunEpochBlock(&nn_instance);
 		if (ll_aton_ret == LL_ATON_RT_WFE) {
@@ -284,26 +296,25 @@ int ai_run(const uint8_t *frame)
 	}
 	for (int i = 0; i < n; i++) {
 		const od_pp_outBuffer_t *b = &pp_output.pOutBuff[i];
-		last_det[i] = (struct detection){ .h = b->height,
+		last.det[i] = (struct detection){ .h = b->height,
 						  .w = b->width,
 						  .x = b->x_center,
 						  .y = b->y_center,
 						  .conf = b->conf,
-						  .cls = b->class_index };
+						  .cls = b->class_index,
+						  .label = get_label(
+							  b->class_index) };
 	}
-	last_n = n;
+	last.n = n;
+	last.ms = HAL_GetTick() - start;
 	taskEXIT_CRITICAL();
 
 	return 0;
 }
 
-int ai_get_detections(struct detection *out, int max)
+void ai_get_result(struct ai_result *out)
 {
 	taskENTER_CRITICAL();
-	int n = max < last_n ? max : last_n;
-	for (int i = 0; i < n; i++) {
-		out[i] = last_det[i];
-	}
+	*out = last;
 	taskEXIT_CRITICAL();
-	return n;
 }

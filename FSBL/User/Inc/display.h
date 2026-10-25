@@ -23,11 +23,10 @@ uint8_t *display_get_bg_buff(void);
 /**
  * @brief Add the overlay to the main content.
  *
- * @param det The detections from the ai inference.
- * @param count The number of detections.
+ * @param result The result of the last ai inference.
  * @return 0 on SUCCESS, error code < 0 when failed to refresh.
  */
-int display_add_overlay(struct detection *det, int count);
+int display_add_overlay(const struct ai_result *result);
 
 /**
  * @brief Draw the screen
