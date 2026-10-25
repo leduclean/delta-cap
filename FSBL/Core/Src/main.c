@@ -21,6 +21,7 @@
 #include "app_freertos.h"
 #include "icache.h"
 #include "ramcfg.h"
+#include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -103,6 +104,7 @@ int main(void)
   MX_RAMCFG_Init();
   MX_ICACHE_Init();
   MX_USART1_UART_Init();
+  MX_SPI5_Init();
   SystemIsolation_Config();
   /* USER CODE BEGIN 2 */
 
@@ -356,6 +358,7 @@ void SystemClock_Config(void)
   /* set up GPDMA configuration */
 
   /* set up GPIO configuration */
+  HAL_GPIO_ConfigPinAttributes(GPIOA,GPIO_PIN_3,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
   HAL_GPIO_ConfigPinAttributes(GPIOB,GPIO_PIN_0,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
   HAL_GPIO_ConfigPinAttributes(GPIOB,GPIO_PIN_3,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
   HAL_GPIO_ConfigPinAttributes(GPIOB,GPIO_PIN_6,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
@@ -365,12 +368,18 @@ void SystemClock_Config(void)
   /* GPIOC Non Secure Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   HAL_GPIO_ConfigPinAttributes(GPIOC,GPIO_PIN_1,GPIO_PIN_NSEC|GPIO_PIN_PRIV);
+  HAL_GPIO_ConfigPinAttributes(GPIOD,GPIO_PIN_5,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
+  HAL_GPIO_ConfigPinAttributes(GPIOD,GPIO_PIN_7,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
+  HAL_GPIO_ConfigPinAttributes(GPIOE,GPIO_PIN_0,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
   HAL_GPIO_ConfigPinAttributes(GPIOE,GPIO_PIN_3,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
   HAL_GPIO_ConfigPinAttributes(GPIOE,GPIO_PIN_5,GPIO_PIN_SEC|GPIO_PIN_PRIV);
   HAL_GPIO_ConfigPinAttributes(GPIOE,GPIO_PIN_6,GPIO_PIN_SEC|GPIO_PIN_PRIV);
+  HAL_GPIO_ConfigPinAttributes(GPIOE,GPIO_PIN_15,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
   /* GPIOF Non Secure Ports Clock Enable */
   __HAL_RCC_GPIOF_CLK_ENABLE();
   HAL_GPIO_ConfigPinAttributes(GPIOF,GPIO_PIN_11,GPIO_PIN_NSEC|GPIO_PIN_PRIV);
+  HAL_GPIO_ConfigPinAttributes(GPIOG,GPIO_PIN_1,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
+  HAL_GPIO_ConfigPinAttributes(GPIOG,GPIO_PIN_2,GPIO_PIN_SEC|GPIO_PIN_NPRIV);
   /* GPIOH Non Secure Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
   HAL_GPIO_ConfigPinAttributes(GPIOH,GPIO_PIN_9,GPIO_PIN_NSEC|GPIO_PIN_PRIV);

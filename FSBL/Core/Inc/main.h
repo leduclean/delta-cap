@@ -77,6 +77,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define STEPPER_BUSY_N_Pin GPIO_PIN_5
+#define STEPPER_BUSY_N_GPIO_Port GPIOD
+#define STEPPER_FLAG_N_Pin GPIO_PIN_7
+#define STEPPER_FLAG_N_GPIO_Port GPIOD
 #define TRACED1_Pin GPIO_PIN_0
 #define TRACED1_GPIO_Port GPIOB
 #define TRACED3_Pin GPIO_PIN_7
@@ -87,6 +91,8 @@ void Error_Handler(void);
 #define TRACECLK_GPIO_Port GPIOB
 #define TRACED0_Pin GPIO_PIN_3
 #define TRACED0_GPIO_Port GPIOE
+#define STEPPER_RESET_N_Pin GPIO_PIN_0
+#define STEPPER_RESET_N_GPIO_Port GPIOE
 #define OCTOSPI_IO2_Pin GPIO_PIN_4
 #define OCTOSPI_IO2_GPIO_Port GPION
 #define I2C2_SDA_Pin GPIO_PIN_11
@@ -99,6 +105,8 @@ void Error_Handler(void);
 #define OCTOSPI_IO4_GPIO_Port GPION
 #define OCTOSPI_DQS_Pin GPIO_PIN_0
 #define OCTOSPI_DQS_GPIO_Port GPION
+#define STEPPER_CS_N_Pin GPIO_PIN_3
+#define STEPPER_CS_N_GPIO_Port GPIOA
 #define OCTOSPI_IO1_Pin GPIO_PIN_3
 #define OCTOSPI_IO1_GPIO_Port GPION
 #define OCTOSPI_IO3_Pin GPIO_PIN_5
@@ -115,8 +123,6 @@ void Error_Handler(void);
 #define OCTOSPI_IO0_GPIO_Port GPION
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
-#define I2C2_SCL_Pin GPIO_PIN_10
-#define I2C2_SCL_GPIO_Port GPIOB
 #define SWO_Pin GPIO_PIN_5
 #define SWO_GPIO_Port GPIOB
 #define OCTOSPI_IO6_Pin GPIO_PIN_10
