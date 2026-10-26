@@ -1,8 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-//TODO try 30 FPS
-#define CAMERA_FPS 25
+#define CAMERA_FPS 30
 #define CAMERA_FLIP CMW_MIRRORFLIP_NONE
 
 #define NN_WIDTH 224U

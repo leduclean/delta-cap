@@ -45,7 +45,7 @@ MEMORY
   /* AXISRAM2 end, after the 255K FSBL image */
   RAM2   (rw)     : ORIGIN = 0x341C0000,   LENGTH = 256K
 
-  /* npuRAM3, not used by the model (size 0 in Model/stm32n6_reloc.mpool) */
+  /* npuRAM3, not used by the model (absent from Model/stm32n6_reloc.mpool) */
   NPURAM3 (rw)    : ORIGIN = 0x34200000,   LENGTH = 448K
 }
 /* Highest address of the user mode stack */
