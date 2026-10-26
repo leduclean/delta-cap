@@ -2,6 +2,9 @@ file(GLOB_RECURSE USER_SRC CONFIGURE_DEPENDS Src/*.c)
 add_library(user STATIC ${USER_SRC})
 
 target_include_directories(user PUBLIC Inc)
+
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/model.cmake)
+target_compile_definitions(user PRIVATE AI_MODEL_ADDR=${AI_MODEL_ADDR})
 target_link_libraries(user PUBLIC camera lcd screenl stm32cubemx ai-pp stepper)
 
 # Linux like flags

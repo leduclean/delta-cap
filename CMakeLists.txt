@@ -17,7 +17,16 @@ file(GLOB ST_TOOL_DIRS $ENV{HOME}/st/*/plugins/*/tools/bin)
 find_program(ARM_GDB arm-none-eabi-gdb HINTS ${ST_TOOL_DIRS})
 find_program(STLINK_GDBSERVER ST-LINK_gdbserver HINTS ${ST_TOOL_DIRS})
 find_program(STM32_PROGRAMMER STM32_Programmer_CLI HINTS ${ST_TOOL_DIRS})
+file(GLOB STEDGEAI_DIRS $ENV{HOME}/STEdgeAI/*/Utilities/linux)
+find_program(STEDGEAI stedgeai HINTS ${STEDGEAI_DIRS})
 cmake_path(GET STM32_PROGRAMMER PARENT_PATH STM32_PROGRAMMER_DIR)
+
+set(MODEL_TFLITE
+    ${CMAKE_SOURCE_DIR}/Model/model_int8.tflite
+    CACHE FILEPATH
+    "Quantized .tflite deployed by generate-model"
+)
+include(cmake/model.cmake)
 
 set(FSBL_ELF ${CMAKE_SOURCE_DIR}/FSBL/build/Delta_FSBL.elf)
 set(GDB_PORT 61234)
@@ -73,7 +82,22 @@ add_custom_target(
     COMMAND
         ${STM32_PROGRAMMER} --connect port=SWD mode=HOTPLUG ap=1 --extload
         ${STM32_PROGRAMMER_DIR}/ExternalLoader/MX25UM51245G_STM32N6570-NUCLEO.stldr
-        --write ${CMAKE_SOURCE_DIR}/Model/network_rel.hex --verify
-        -hardRst # no long form
+        --write ${CMAKE_SOURCE_DIR}/Model/network_rel.bin ${AI_MODEL_ADDR}
+        --verify -hardRst # no long form
+    USES_TERMINAL
+)
+
+set(STEDGEAI_GEN ${CMAKE_SOURCE_DIR}/training/outputs/stedgeai)
+add_custom_target(
+    generate-model
+    COMMAND
+        ${STEDGEAI} generate --model ${MODEL_TFLITE} --target stm32n6
+        --st-neural-art default@user_neuralart_NUCLEO-N657X0-Q_reloc.json
+        --input-data-type uint8 --output-data-type int8 --reloc --output
+        ${STEDGEAI_GEN}/st_ai_output --workspace ${STEDGEAI_GEN}/st_ai_ws
+    COMMAND
+        ${CMAKE_COMMAND} -E copy ${STEDGEAI_GEN}/st_ai_output/network_rel.bin
+        ${CMAKE_SOURCE_DIR}/Model/network_rel.bin
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Model
     USES_TERMINAL
 )

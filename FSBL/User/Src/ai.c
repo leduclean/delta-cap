@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stm32n6xx_hal.h>
+
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -10,18 +13,12 @@
 #include "od_pp_output_if.h"
 #include "stai.h"
 #include "stm32n6xx_nucleo_xspi.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stm32n6xx_hal.h>
-#include <sys/errno.h>
 
 #define AI_YOLOX_OUT_NUM 3
 
-#ifndef AI_IMAGE_ADDR
-/** Address of the runtime loadable image of the model, = ADDR in training/deploy/generate.sh */
-#define AI_IMAGE_ADDR 0x70380000
+/* Address of the runtime loadable image of the model, from AI_MODEL_ADDR in cmake/model.cmake */
+#ifndef AI_MODEL_ADDR
+#error "AI_MODEL_ADDR must be defined by the build (cmake/model.cmake)"
 #endif
 
 /** Allocated ram to install the reloc model, in npuRAM3 (FSBL RAM is full
@@ -182,7 +179,7 @@ static inline stai_tensor tensor_from_info(const LL_Buffer_InfoTypeDef *info)
 	ll_aton_reloc_info rt;
 	int res;
 
-	res = ll_aton_reloc_get_info(AI_IMAGE_ADDR, &rt);
+	res = ll_aton_reloc_get_info(AI_MODEL_ADDR, &rt);
 	if (res != AI_RELOC_RT_ERR_NONE) {
 		return -EIO;
 	}
@@ -195,7 +192,7 @@ static inline stai_tensor tensor_from_info(const LL_Buffer_InfoTypeDef *info)
 	/*WARNING: Before the install: it creates the OSAL cache mutex the install takes */
 	LL_ATON_RT_RuntimeInit();
 
-	res = ll_aton_reloc_install(AI_IMAGE_ADDR, &reloc_config, &nn_instance);
+	res = ll_aton_reloc_install(AI_MODEL_ADDR, &reloc_config, &nn_instance);
 	if (res != AI_RELOC_RT_ERR_NONE) {
 		return -EIO;
 	}
