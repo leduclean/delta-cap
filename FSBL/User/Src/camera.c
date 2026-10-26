@@ -14,10 +14,9 @@
 static CMW_DCMIPP_Conf_t screen_conf = {
 	.output_width = SCREEN_WIDTH,
 	.output_height = SCREEN_HEIGHT,
-	.output_format = DCMIPP_PIXEL_PACKER_FORMAT_RGB888_YUV444_1,
+	.output_format = DCMIPP_PIXEL_PACKER_FORMAT_RGB565_1,
+	.output_bpp = 2,
 
-	.output_bpp = 3,
-	.enable_swap = 1, /* RGB */
 	.enable_gamma_conversion = 0,
 
 	.mode = CMW_Aspect_ratio_fullscreen,

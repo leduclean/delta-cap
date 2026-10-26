@@ -6,6 +6,7 @@
 
 #define SCREEN_WIDTH (320)
 #define SCREEN_HEIGHT (240)
+#define SCREEN_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT)
 
 /**
  * @brief Get a pointer to the background buffer.

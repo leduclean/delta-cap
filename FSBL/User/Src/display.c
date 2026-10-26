@@ -1,5 +1,4 @@
 #include "camera.h"
-#include <string.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -10,51 +9,49 @@
 #include "stm32_lcd_ex.h"
 #include "stm32n6xx.h"
 
-#define LCD_BG_WIDTH SCREEN_WIDTH
-#define LCD_BG_HEIGHT SCREEN_HEIGHT
-#define LCD_FG_WIDTH SCREEN_WIDTH
-#define LCD_FG_HEIGHT SCREEN_HEIGHT
-
-#define UTIL_LCD_COLOR_TRANSPARENT 0
+#define UTIL_LCD_COLOR_TRANSPARENT 0 /**< Transparent color used to clear */
 
 /* Camera frame, in RAM2 (not zeroed at boot, the DCMIPP fills it) */
-__attribute__((section(".ram2"), aligned(32))) static uint8_t
-	lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT * 3];
-
-__attribute__((aligned(32))) //__attribute__((section(".video_data")))
-static uint8_t lcd_fg_buffer[2][LCD_FG_WIDTH * LCD_FG_HEIGHT * 2];
-
-__attribute__((aligned(32))) //__attribute__((section(".video_data")))
-static uint8_t screen_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT * 3];
-
+[[gnu::section(".ram2")]] alignas(32) static uint8_t
+	lcd_bg_buffer[SCREEN_SIZE * 2];
+/**
+ * @brief Background of the display.
+ */
 static SCRL_LayerConfig bg_layer_cfg = {
 	.origin = { 0, 0 },
-	.size = { LCD_BG_WIDTH, LCD_BG_HEIGHT },
-	.format = SCRL_RGB888,
+	.size = { SCREEN_WIDTH, SCREEN_HEIGHT },
+	.format = SCRL_RGB565, /* same as the screen, no loss */
 	.address = lcd_bg_buffer,
 };
 
+/**
+ * @brief Double buffer for overlay display.
+ */
+alignas(32) static uint8_t lcd_fg_buffer[2][SCREEN_SIZE * 2];
 static SCRL_LayerConfig fg_layer_cfg = {
 	.origin = { 0, 0 },
-	.size = { LCD_FG_WIDTH, LCD_FG_HEIGHT },
+	.size = { SCREEN_WIDTH, SCREEN_HEIGHT },
 	.format = SCRL_ARGB4444, /* alpha needed to overlay on the camera */
 	.address = lcd_fg_buffer[0],
 };
+/**
+ * @brief Flag to track the current ready to draw buffer.
+ */
+static int fg_ready = 0;
 
+/**
+ * @brief Buffer used by the DMA2D to refresh the screen.
+ */
+alignas(32) static uint8_t screen_buffer[SCREEN_SIZE * 2];
 static SCRL_ScreenConfig screen_config = {
-	.size = { LCD_FG_WIDTH, LCD_FG_HEIGHT },
-	.format =
-		SCRL_RGB565, /* Use SCRL_RGB565 if host support this format to reduce cpu load */
+	.size = { SCREEN_WIDTH, SCREEN_HEIGHT },
+	.format = SCRL_RGB565,
 	.address = screen_buffer,
 	.fps = CAMERA_FPS,
 };
 
 int display_init(void)
 {
-	/* Initialize the LCD to black */
-	memset(screen_buffer, 0, sizeof(screen_buffer));
-	SCB_CleanDCache_by_Addr(screen_buffer, sizeof(screen_buffer));
-
 	int res;
 	res = SCRL_Init((SCRL_LayerConfig *[2]){ &bg_layer_cfg, &fg_layer_cfg },
 			&screen_config);
@@ -86,14 +83,13 @@ uint8_t *display_get_bg_buff(void)
  * UTIL_LCD_* draws into and the one DMA2D reads to compose the frame.
  * We draw into the back buffer while DMA2D reads the front one, then swap.
  */
-static int fg_back_idx = 0;
 
 /* Point drawing at the back buffer */
 static int overlay_begin_draw(void)
 {
 	taskENTER_CRITICAL();
-	int res = SCRL_SetAddress_NoReload(lcd_fg_buffer[fg_back_idx],
-					   SCRL_LAYER_1);
+	int res =
+		SCRL_SetAddress_NoReload(lcd_fg_buffer[fg_ready], SCRL_LAYER_1);
 	taskEXIT_CRITICAL();
 	return res;
 }
@@ -101,12 +97,12 @@ static int overlay_begin_draw(void)
 /* Swap the back buffer with the front buffer */
 static int overlay_swap(void)
 {
-	SCB_CleanDCache_by_Addr(lcd_fg_buffer[fg_back_idx],
+	SCB_CleanDCache_by_Addr(lcd_fg_buffer[fg_ready],
 				sizeof(lcd_fg_buffer[0]));
 	taskENTER_CRITICAL();
 	int res = SCRL_ReloadLayer(SCRL_LAYER_1);
 	taskEXIT_CRITICAL();
-	fg_back_idx = 1 - fg_back_idx;
+	fg_ready ^= 1;
 	return res;
 }
 
