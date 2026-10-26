@@ -22,8 +22,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <main.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "app.h"
+#include <stm32n6xx_hal_def.h>
+#include <stm32n6xx_hal_uart.h>
+#include <string.h>
+#include <usart.h>
 
 /* USER CODE END Includes */
 
@@ -51,6 +57,27 @@
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
+
+/* USER CODE BEGIN 5 */
+void vApplicationMallocFailedHook(void)
+{
+    static const char msg[] = "\r\n FATAL: FreeRTOS heap exhausted, attach gdb \r\n";
+    HAL_UART_Transmit(&huart1, (const uint8_t *)msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+    /* GDB common break point */
+    Error_Handler();
+}
+/* USER CODE END 5 */
+
+/* USER CODE BEGIN 4 */
+void vApplicationStackOverflowHook([[maybe_unused]] xTaskHandle xTask, char *pcTaskName)
+{
+    static const char msg[] = "\r\n FATAL: FreeRTOS stack overflow in task, attach gdb \r\n";
+    HAL_UART_Transmit(&huart1, (const uint8_t *)msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart1, (const uint8_t *)pcTaskName, strlen(pcTaskName) , HAL_MAX_DELAY);
+    /* GDB common break point */
+    Error_Handler();
+}
+/* USER CODE END 4 */
 
 /**
   * @brief  FreeRTOS initialization

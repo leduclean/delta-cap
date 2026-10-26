@@ -37,7 +37,7 @@ CDefines=USE_HAL_DRIVER;STM32N657xx;USE_HAL_DRIVER;UX_INCLUDE_USER_DEFINE_FILE;U
 
 [Appli:PreviousUsedCMakes]
 SourceFiles=Drivers/CMSIS/Device/ST/STM32N6xx/Source/Templates/system_stm32n6xx.c;;;
-HeaderPath=Drivers/CMSIS/Device/ST/STM32N6xx/Include;Drivers/CMSIS/Include;Middlewares/Third_Party/FreeRTOS/Source/include/;Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure/;Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/;Middlewares/Third_Party/CMSIS/RTOS2/Include/;Drivers/CMSIS/Device/ST/STM32N6xx/Include;Drivers/CMSIS/Include;
+HeaderPath=Drivers/CMSIS/Device/ST/STM32N6xx/Include;Drivers/CMSIS/Include;Drivers/CMSIS/Device/ST/STM32N6xx/Include;Drivers/CMSIS/Include;
 CDefines=USE_HAL_DRIVER;STM32N657xx;USE_HAL_DRIVER;USE_HAL_DRIVER;USE_HAL_DRIVER;
 
 [ExtMemLoader:PreviousUsedCMakes]
@@ -109,12 +109,7 @@ source=../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c;../M
 SourceFiles=;
 
 [Appli:ThirdPartyIp]
-ThirdPartyIpNumber=1
-ThirdPartyIpName#0=STMicroelectronics.X-CUBE-FREERTOS.1.6.0_Appli
-
-[Appli:ThirdPartyIp#STMicroelectronics.X-CUBE-FREERTOS.1.6.0_Appli]
-include=../Middlewares/Third_Party/FreeRTOS/Source/include;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2;../Drivers/CMSIS/RTOS2/Include;
-source=../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c;../Middlewares/Third_Party/FreeRTOS/Source/croutine.c;../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c;../Middlewares/Third_Party/FreeRTOS/Source/list.c;../Middlewares/Third_Party/FreeRTOS/Source/queue.c;../Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c;../Middlewares/Third_Party/FreeRTOS/Source/tasks.c;../Middlewares/Third_Party/FreeRTOS/Source/timers.c;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure/port.c;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c;
+ThirdPartyIpNumber=0
 
 [ExtMemLoader:PreviousGenFiles]
 SourceFiles=;
@@ -170,13 +165,8 @@ SourcePath#1=../FSBL/USBX/App
 SourceFiles=;
 
 [ThirdPartyIp]
-ThirdPartyIpNumber=2
-ThirdPartyIpName#0=STMicroelectronics.X-CUBE-FREERTOS.1.6.0_Appli
-ThirdPartyIpName#1=STMicroelectronics.X-CUBE-FREERTOS.1.6.0_FSBL
-
-[ThirdPartyIp#STMicroelectronics.X-CUBE-FREERTOS.1.6.0_Appli]
-include=../Middlewares/Third_Party/FreeRTOS/Source/include;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2;../Drivers/CMSIS/RTOS2/Include;
-source=../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c;../Middlewares/Third_Party/FreeRTOS/Source/croutine.c;../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c;../Middlewares/Third_Party/FreeRTOS/Source/list.c;../Middlewares/Third_Party/FreeRTOS/Source/queue.c;../Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c;../Middlewares/Third_Party/FreeRTOS/Source/tasks.c;../Middlewares/Third_Party/FreeRTOS/Source/timers.c;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure/port.c;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c;
+ThirdPartyIpNumber=1
+ThirdPartyIpName#0=STMicroelectronics.X-CUBE-FREERTOS.1.6.0_FSBL
 
 [ThirdPartyIp#STMicroelectronics.X-CUBE-FREERTOS.1.6.0_FSBL]
 include=../Middlewares/Third_Party/FreeRTOS/Source/include;../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2;../Drivers/CMSIS/RTOS2/Include;
