@@ -13,7 +13,8 @@ struct detection {
 	float h;
 	float conf;
 	int cls; /**< Class id, use this for sorting */
-	const char *label; /**< Points into the static classes_table, display only */
+	const char *
+		label; /**< Points into the static classes_table, display only */
 };
 
 /**

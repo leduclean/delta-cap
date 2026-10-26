@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -12,6 +10,12 @@
 #include "od_pp_output_if.h"
 #include "stai.h"
 #include "stm32n6xx_nucleo_xspi.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stm32n6xx_hal.h>
+#include <sys/errno.h>
 
 #define AI_YOLOX_OUT_NUM 3
 
@@ -257,6 +261,44 @@ static const char *get_label(int id)
 	return classes_table[id];
 }
 
+static int by_conf_desc(const void *a, const void *b)
+{
+	float ca = ((const od_pp_outBuffer_t *)a)->conf;
+	float cb = ((const od_pp_outBuffer_t *)b)->conf;
+	return (ca < cb) - (ca > cb);
+}
+
+static void fill_detections(uint32_t start)
+{
+	qsort(pp_output.pOutBuff, pp_output.nb_detect,
+	      /* Sort the output elements by confiance */
+	      sizeof(*pp_output.pOutBuff), by_conf_desc);
+	taskENTER_CRITICAL();
+
+	/* Clamp number of detections to the number of boxes */
+	int n = pp_output.nb_detect;
+	/* ST's NMS caps max_boxes_limit per class, not in total: up to 80x10 boxes */
+	int max_det = sizeof(last.det) / sizeof(last.det[0]);
+	if (n > max_det) {
+		n = max_det;
+	}
+
+	for (int i = 0; i < n; i++) {
+		const od_pp_outBuffer_t *b = &pp_output.pOutBuff[i];
+		last.det[i] = (struct detection){ .h = b->height,
+						  .w = b->width,
+						  .x = b->x_center,
+						  .y = b->y_center,
+						  .conf = b->conf,
+						  .cls = b->class_index,
+						  .label = get_label(
+							  b->class_index) };
+	}
+	last.n = n;
+	last.ms = HAL_GetTick() - start;
+	taskEXIT_CRITICAL();
+}
+
 static void load_input(const uint8_t *frame)
 {
 	SCB_InvalidateDCache_by_Addr((void *)frame, NN_FRAME_SIZE);
@@ -288,26 +330,7 @@ int ai_run(const uint8_t *frame)
 		return -EIO;
 	}
 
-	taskENTER_CRITICAL();
-	/* ST's NMS caps max_boxes_limit per class, not in total: up to 80x10 boxes */
-	int n = pp_output.nb_detect;
-	if (n > AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT) {
-		n = AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT;
-	}
-	for (int i = 0; i < n; i++) {
-		const od_pp_outBuffer_t *b = &pp_output.pOutBuff[i];
-		last.det[i] = (struct detection){ .h = b->height,
-						  .w = b->width,
-						  .x = b->x_center,
-						  .y = b->y_center,
-						  .conf = b->conf,
-						  .cls = b->class_index,
-						  .label = get_label(
-							  b->class_index) };
-	}
-	last.n = n;
-	last.ms = HAL_GetTick() - start;
-	taskEXIT_CRITICAL();
+	fill_detections(start);
 
 	return 0;
 }
