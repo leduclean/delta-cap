@@ -1,18 +1,12 @@
 #include <app_config.h>
-#include <assert.h>
 #include <errno.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stm32n6xx_hal.h>
-
-#include "FreeRTOS.h"
-#include "task.h"
 
 #include "ai.h"
 #include "app.h"
 #include "camera.h"
 #include "cmsis_os2.h"
-#include "cmw_camera.h"
 #include "main.h"
 
 #include "console.h"
@@ -30,19 +24,12 @@ const osThreadAttr_t display_task_attr = {
 	.stack_size = 256 * 4
 };
 
-/* Static: too big for the 8 KB FreeRTOS heap.*/
-static StaticTask_t ai_task_cb; /* Needed for static allocation */
-static uint64_t ai_task_stack[4096 / sizeof(uint64_t)];
-
 const osThreadAttr_t ai_task_attr = {
 	.name = "ai",
 	/* Since ai is high cost task we need to put it with low priority
     * to ensure that we will display when a new frame arrives*/
 	.priority = (osPriority_t)osPriorityBelowNormal,
-	.cb_mem = &ai_task_cb,
-	.cb_size = sizeof(ai_task_cb),
-	.stack_mem = ai_task_stack,
-	.stack_size = sizeof(ai_task_stack),
+	.stack_size = 4096,
 };
 
 #define MAX_CMD_SIZE 64
@@ -50,12 +37,10 @@ const osThreadAttr_t ai_task_attr = {
 static void console_task([[maybe_unused]] void *argument)
 {
 	char line[MAX_CMD_SIZE];
-
-	console_rx_flush();
 	for (;;) {
-		printf("> ");
+		printf("(delta) ");
 		if (console_scan_line(line, sizeof(line)) <= 0) {
-			printf("Invalid Input \n");
+			printf("Invalid Input \r\n");
 			continue;
 		}
 		/** Add some command handling via strcomp */
@@ -72,7 +57,7 @@ static void ai_task([[maybe_unused]] void *argument)
 	for (;;) {
 		uint8_t *frame = camera_get_nn_frame();
 		if (!frame) {
-			printf("Frame took too much time to come");
+			printf("Frame took too much time to come\r\n");
 			continue;
 		}
 		res = ai_run(frame);
@@ -94,7 +79,7 @@ static void display_task([[maybe_unused]] void *argument)
 		camera_run();
 		res = camera_wait_screen_frame();
 		if (res < 0) {
-			printf("screen frame timeout\n");
+			printf("screen frame timeout\r\n");
 			continue;
 		}
 
