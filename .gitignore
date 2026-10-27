@@ -4,3 +4,4 @@ FSBL/build/
 FSBL/.cache/
 compile_commands.json
 *.metadata
+__pycache__
