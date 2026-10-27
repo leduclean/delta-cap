@@ -1,13 +1,11 @@
 #include <stdlib.h>
 #include <stm32n6xx_hal.h>
 
-#include "FreeRTOS.h"
-#include "task.h"
-
 #include "ai.h"
 #include "app_config.h"
 #include "app_postprocess.h"
 #include "camera.h"
+#include "cmsis_os2.h"
 #include "ll_aton_rt_user_api.h"
 #include "npu_cache.h"
 #include "od_pp_output_if.h"
@@ -54,6 +52,14 @@ static int32_t nn_out_size[AI_YOLOX_OUT_NUM];
 
 static stai_ptr nn_in;
 static int32_t nn_in_size;
+
+/**
+ * @brief Last ai inference result.
+ *
+ * @note written by ai task and readed by display/control task.
+ * @warning disable preempt when copying from our into this structure.
+ * with osKernelLock/Unlock() to ensure coherent state.
+ */
 static struct ai_result last;
 
 /**
@@ -280,20 +286,24 @@ static void fill_detections(uint32_t start)
 		n = max_det;
 	}
 
+	struct ai_result res;
 	for (int i = 0; i < n; i++) {
 		const od_pp_outBuffer_t *b = &pp_output.pOutBuff[i];
-		last.det[i] = (struct detection){ .h = b->height,
-						  .w = b->width,
-						  .x = b->x_center,
-						  .y = b->y_center,
-						  .conf = b->conf,
-						  .cls = b->class_index,
-						  .label = get_label(
-							  b->class_index) };
+		res.det[i] = (struct detection){ .h = b->height,
+						 .w = b->width,
+						 .x = b->x_center,
+						 .y = b->y_center,
+						 .conf = b->conf,
+						 .cls = b->class_index,
+						 .label = get_label(
+							 b->class_index) };
 	}
-	last.n = n;
-	last.ms = HAL_GetTick() - start;
-	taskEXIT_CRITICAL();
+	res.n = n;
+	res.ms = HAL_GetTick() - start;
+
+	osKernelLock();
+	last = res;
+	osKernelUnlock();
 }
 
 static void load_input(const uint8_t *frame)
@@ -334,7 +344,7 @@ int ai_run(const uint8_t *frame)
 
 void ai_get_result(struct ai_result *out)
 {
-	taskENTER_CRITICAL();
+	osKernelLock();
 	*out = last;
-	taskEXIT_CRITICAL();
+	osKernelUnlock();
 }
