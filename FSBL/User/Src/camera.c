@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <errno.h>
 
-#include "FreeRTOS.h"
 #include "camera.h"
 #include "cmsis_os2.h"
 #include "cmw_camera.h"
@@ -74,44 +73,9 @@ static CMW_CameraInit_t cam_conf = {
 	.mirror_flip = CAMERA_FLIP,
 };
 
-/**
- * @brief Semaphore that indicates that a frame is available in 
- * in the display pipe and ready to be dislayed.
- */
-static osSemaphoreId_t frame_sem;
-static StaticSemaphore_t frame_sem_cb;
-static const osSemaphoreAttr_t frame_sem_attr = {
-	.name = "frame sem",
-	.cb_mem = &frame_sem_cb,
-	.cb_size = sizeof(frame_sem_cb),
-};
-
-/**
- * @brief Semaphore that indicates that a frame is available in 
- * the neural network pipe and ready for inference.
- */
-static osSemaphoreId_t nn_frame_sem;
-static StaticSemaphore_t nn_frame_sem_cb;
-static const osSemaphoreAttr_t nn_frame_sem_attr = {
-	.name = "nn frame sem",
-	.cb_mem = &nn_frame_sem_cb,
-	.cb_size = sizeof(nn_frame_sem_cb),
-};
-
 int camera_init()
 {
 	int res;
-
-	frame_sem = osSemaphoreNew(1, 0, &frame_sem_attr);
-	if (!frame_sem) {
-		return -EINVAL;
-	}
-
-	nn_frame_sem = osSemaphoreNew(1, 0, &nn_frame_sem_attr);
-
-	if (!nn_frame_sem) {
-		return -EINVAL;
-	}
 
 	res = CMW_CAMERA_Init(&cam_conf, NULL);
 	if (res < 0) {
@@ -131,8 +95,12 @@ int camera_init()
 	return 0;
 }
 
+static osThreadId_t nn_waiter;
+static osThreadId_t screen_waiter;
+
 int camera_start_screen_pipe(uint8_t *pbuff)
 {
+	screen_waiter = osThreadGetId();
 	return CMW_CAMERA_Start(DCMIPP_PIPE1, pbuff, CMW_MODE_CONTINUOUS);
 }
 
@@ -148,6 +116,7 @@ static volatile uint8_t nn_ready;
 
 int camera_start_nn_pipe(void)
 {
+	nn_waiter = osThreadGetId();
 	return CMW_CAMERA_DoubleBufferStart(DCMIPP_PIPE2, nn_buf[0], nn_buf[1],
 					    CMW_MODE_CONTINUOUS);
 }
@@ -165,17 +134,27 @@ int camera_run(void)
 #define NN_FRAME_TIMEOUT (FRAME_TIMEOUT / 2) /**< Double buffering timeout. */
 /** @} */
 
-int camera_wait_screen_frame(void)
+#define CAM_FLAG_FRAME 0x1U
+
+static int wait_frame(uint32_t timeout)
 {
-	if (osSemaphoreAcquire(frame_sem, FRAME_TIMEOUT) != osOK) {
+	if (osThreadFlagsWait(CAM_FLAG_FRAME, osFlagsWaitAny, timeout) &
+	    osFlagsError) {
 		return -ETIMEDOUT;
 	}
+
 	return 0;
+}
+
+int camera_wait_screen_frame(void)
+{
+	return wait_frame(FRAME_TIMEOUT);
 }
 
 uint8_t *camera_get_nn_frame(void)
 {
-	if (osSemaphoreAcquire(nn_frame_sem, NN_FRAME_TIMEOUT) != osOK) {
+	int res = wait_frame(NN_FRAME_TIMEOUT);
+	if (res < 0) {
 		return NULL;
 	}
 	return nn_buf[nn_ready];
@@ -193,11 +172,11 @@ int CMW_CAMERA_PIPE_FrameEventCallback(uint32_t pipe)
 {
 	switch (pipe) {
 	case DCMIPP_PIPE1:
-		osSemaphoreRelease(frame_sem);
+		osThreadFlagsSet(screen_waiter, CAM_FLAG_FRAME);
 		break;
 	case DCMIPP_PIPE2:
 		nn_ready ^= 1;
-		osSemaphoreRelease(nn_frame_sem);
+		osThreadFlagsSet(nn_waiter, CAM_FLAG_FRAME);
 		break;
 	default:
 		break;
