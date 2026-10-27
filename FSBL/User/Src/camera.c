@@ -130,7 +130,8 @@ int camera_run(void)
  * @name Timeouts for blocking function waiting for an available frame.
  * @{
  */
-#define FRAME_TIMEOUT pdMS_TO_TICKS(5 * 1000 / CAMERA_FPS) /**< 5 frame. */
+
+#define FRAME_TIMEOUT (5 * osKernelGetTickFreq() / CAMERA_FPS) /**< 5 frame. */
 #define NN_FRAME_TIMEOUT (FRAME_TIMEOUT / 2) /**< Double buffering timeout. */
 /** @} */
 
