@@ -312,6 +312,12 @@ static void load_input(const uint8_t *frame)
 	SCB_CleanDCache_by_Addr(nn_in, NN_FRAME_SIZE);
 }
 
+/**
+ * @brief Event used to flag when a new inference is done by the nn.
+ */
+static osEventFlagsId_t inf_done_evt;
+#define AI_INF_DONE_FLAG 0x1U /**< Associate flag set in the event. */
+
 int ai_run(const uint8_t *frame)
 {
 	load_input(frame);
@@ -337,6 +343,7 @@ int ai_run(const uint8_t *frame)
 	}
 
 	fill_detections(start);
+	osEventFlagsSet(inf_done_evt, AI_INF_DONE_FLAG);
 
 	return 0;
 }
@@ -346,4 +353,16 @@ void ai_get_result(struct ai_result *out)
 	osKernelLock();
 	*out = last;
 	osKernelUnlock();
+}
+
+int ai_wait_result(struct ai_result *out, uint32_t timeout)
+{
+	if (osEventFlagsWait(inf_done_evt, AI_INF_DONE_FLAG, osFlagsWaitAny,
+			     timeout) &
+	    osFlagsError) {
+		return -ETIMEDOUT;
+	}
+
+	ai_get_result(out);
+	return 0;
 }

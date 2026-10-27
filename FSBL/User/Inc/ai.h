@@ -62,3 +62,12 @@ int32_t ai_input_size(void);
  * @param[out] out The result to fill.
  */
 void ai_get_result(struct ai_result *out);
+
+/**
+ * @brief Block until the result of the next inference run.
+ *
+ * @param out[out] The result to fill.
+ * @param timeout Timeout to wait next inference.
+ * @return 0 on SUCCESS, -ETIMEDOUT if timeout.
+ */
+[[nodiscard]] int ai_wait_result(struct ai_result *out, uint32_t timeout);
