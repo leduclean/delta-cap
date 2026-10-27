@@ -1,84 +1,95 @@
 cmake_minimum_required(VERSION 3.22)
-
-#
-# This file is generated only once,
-# and is not re-generated if converter is called multiple times.
-#
-# User is free to modify the file as much as necessary
-#
-
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS ON)
 
-# Define the build type
+# Default build type is Debug.
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-message("Build type: " ${CMAKE_BUILD_TYPE})
+message(
+    "Build type: "
+    ${CMAKE_BUILD_TYPE}
+)
 
-# Enable compile command to ease indexing with e.g. clangd
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
-
-# Compiler options
-set(STM32_MCU_FLAGS  "-mcpu=cortex-m55 -mfpu=fpv5-d16 -mfloat-abi=hard -mcmse " )
-
-#Linker options
+# Compiler and linked options
+set(STM32_MCU_FLAGS "-mcpu=cortex-m55 -mfpu=fpv5-d16 -mfloat-abi=hard -mcmse ")
+add_compile_definitions(USE_FULL_ASSERT)
 set(STM32_LINKER_SCRIPT STM32N657XX_AXISRAM2_fsbl.ld)
-set(STM32_LINKER_OPTION  )
 
-# Set the project name
+# Must stay after the STM32_* variables: project() loads the toolchain file,
+# which reads them to build the compiler and linker flags.
 set(CMAKE_PROJECT_NAME Delta_FSBL)
-project(${CMAKE_PROJECT_NAME})
+project(
+    ${CMAKE_PROJECT_NAME}
+    LANGUAGES
+        C
+        ASM
+)
 
-# Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
 
-# Include mx-generated
 include("mx-generated.cmake")
 
-
-# In order to use CMake for cross-compiling
-set(CMAKE_CXX_COMPILER_FORCED "true")
-
-
-add_compile_definitions(USE_FULL_ASSERT)
+# Lib first: User sets properties on its targets
 add_subdirectory(../Lib ${CMAKE_BINARY_DIR}/Lib)
-add_subdirectory(User)
 
-# Add project symbols (macros)
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined symbols
+# Our code: a separate lib so the strict flags don't hit CubeMX and Lib sources
+file(GLOB_RECURSE USER_SRC CONFIGURE_DEPENDS User/Src/*.c)
+add_library(user STATIC ${USER_SRC})
+target_include_directories(user PUBLIC User/Inc)
+
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/model.cmake)
+target_compile_definitions(user PRIVATE AI_MODEL_ADDR=${AI_MODEL_ADDR})
+target_link_libraries(
+    user
+    PUBLIC
+        camera
+        lcd
+        screenl
+        stm32cubemx
+        ai-pp
+        stepper
 )
 
-# Enable CMake support for ASM and C languages
-enable_language(C ASM)
-
-# Add include paths
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
-
+# Linux like flags
+set_target_properties(
+    user
+    PROPERTIES
+        C_STANDARD
+            23
+)
+target_compile_options(
+    user
+    PRIVATE
+        -Wall
+        -Wextra
+        -Wundef
+        -Wvla
+        -Wshadow
+        -Wdouble-promotion
+        -Wstrict-prototypes
+        -Wmissing-prototypes
+        -Wformat=2
+        -Wcast-align
+        -Wnull-dereference
+        -fno-strict-aliasing
+        -Werror
 )
 
-# Add sources to executable
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
+# External lib are not compiled with our flags
+set_target_properties(
+    stm32cubemx
+    camera
+    lcd
+    screenl
+    ai
+    ai-pp
+    stepper
+    PROPERTIES
+        SYSTEM
+            TRUE
 )
 
-# Link directories setup
-target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
-)
-
-# Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME} user)
-
-# Remove wrong libob.a library dependency when using cpp files
-list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
-
-# Validate that STM32CubeMX code is compatible with C standard
-if((CMAKE_C_STANDARD EQUAL 90) OR (CMAKE_C_STANDARD EQUAL 99))
-    message(ERROR "Generated code requires C11 or higher")
-endif()
