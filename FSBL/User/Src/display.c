@@ -1,10 +1,6 @@
-#include "camera.h"
-
-#include "FreeRTOS.h"
-#include "task.h"
-
-#include "ai.h"
 #include "display.h"
+#include "ai.h"
+#include "camera.h"
 #include "scrl.h"
 #include "stm32_lcd_ex.h"
 #include "stm32n6xx.h"
@@ -87,10 +83,8 @@ uint8_t *display_get_bg_buff(void)
 /* Point drawing at the back buffer */
 static int overlay_begin_draw(void)
 {
-	taskENTER_CRITICAL();
 	int res =
 		SCRL_SetAddress_NoReload(lcd_fg_buffer[fg_ready], SCRL_LAYER_1);
-	taskEXIT_CRITICAL();
 	return res;
 }
 
@@ -99,9 +93,7 @@ static int overlay_swap(void)
 {
 	SCB_CleanDCache_by_Addr(lcd_fg_buffer[fg_ready],
 				sizeof(lcd_fg_buffer[0]));
-	taskENTER_CRITICAL();
 	int res = SCRL_ReloadLayer(SCRL_LAYER_1);
-	taskEXIT_CRITICAL();
 	fg_ready ^= 1;
 	return res;
 }
