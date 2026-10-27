@@ -276,7 +276,6 @@ static void fill_detections(uint32_t start)
 	qsort(pp_output.pOutBuff, pp_output.nb_detect,
 	      /* Sort the output elements by confiance */
 	      sizeof(*pp_output.pOutBuff), by_conf_desc);
-	taskENTER_CRITICAL();
 
 	/* Clamp number of detections to the number of boxes */
 	int n = pp_output.nb_detect;
