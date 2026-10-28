@@ -6,11 +6,11 @@
 #include "ai.h"
 #include "app.h"
 #include "camera.h"
+#include "cmd.h"
 #include "cmsis_os2.h"
-#include "main.h"
-
 #include "console.h"
 #include "display.h"
+#include "main.h"
 
 const osThreadAttr_t console_task_attr = {
 	.name = "cli",
@@ -43,7 +43,10 @@ static void console_task([[maybe_unused]] void *argument)
 			printf("Invalid Input \r\n");
 			continue;
 		}
-		/** Add some command handling via strcomp */
+		int res = cmd_execute(line);
+		if (res < 0) {
+			printf("Invalid command refear to 'help'\r\n");
+		}
 	}
 }
 
