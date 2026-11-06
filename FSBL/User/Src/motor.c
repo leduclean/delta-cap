@@ -12,11 +12,13 @@
 #include "stm32n6xx_hal_gpio.h"
 #include "xnucleoihm02a1.h"
 
-#define STEP_SEL MICROSTEP_1_4
-#define FULLSTEP_PER_REVOLUTION 200
-
-#define MOTOR_NUM 3 /**< Number of motors */
-#define MOTOR_TIMEOUT (5 * osKernelGetTickFreq())
+/**
+ * @name Motor config constant, should match the init config of each motor.
+ * @{
+ */
+#define MOTOR_CONFIG_STEP_MODE MICROSTEP_1_4 /**< Micro step mode selection. */
+#define MOTOR_CONFIG_FSTEP_PREV 200 /**< Minimum nb of steps per revolution.  */
+/** @} */
 
 static osThreadId_t evt_waiter;
 
@@ -33,10 +35,10 @@ int motor_init(void)
 	return 0;
 }
 
-static uint32_t motor_angle_to_steps(float target_angle_deg)
+static uint32_t deg_to_steps(float target_angle_deg)
 {
-	uint32_t steps_per_rev =
-		(uint32_t)(FULLSTEP_PER_REVOLUTION * (1 << STEP_SEL));
+	uint32_t steps_per_rev = (uint32_t)(MOTOR_CONFIG_FSTEP_PREV *
+					    (1 << MOTOR_CONFIG_STEP_MODE));
 
 	float steps_per_deg = (float)steps_per_rev / 360.0f;
 	int32_t absolute_steps = (int32_t)(target_angle_deg * steps_per_deg);
@@ -44,10 +46,9 @@ static uint32_t motor_angle_to_steps(float target_angle_deg)
 	return (uint32_t)absolute_steps;
 }
 
-static void motor_goto_angle(enum motor_t motor, float target_angle_deg)
+static void prepare_goto(enum motor_t motor, float target_angle_deg)
 {
-	int32_t absolute_steps =
-		(int32_t)motor_angle_to_steps(target_angle_deg);
+	int32_t absolute_steps = (int32_t)deg_to_steps(target_angle_deg);
 	L6470_PrepareGoTo(motor, absolute_steps);
 }
 
@@ -61,7 +62,10 @@ static void motor_goto_angle(enum motor_t motor, float target_angle_deg)
 	(1 << 1) /**< Flags for an alarm signal of the motor  */
 /** @} */
 
-static int32_t motor_wait_evt(uint32_t evt, uint32_t timeout)
+#define MOTOR_TIMEOUT \
+	(5 * osKernelGetTickFreq()) /**< Motor operation timeout. */
+
+static int32_t wait_evt(uint32_t evt, uint32_t timeout)
 {
 	uint32_t f = osThreadFlagsWait(evt, osFlagsWaitAny, timeout);
 	if (f & osFlagsError) {
@@ -71,37 +75,27 @@ static int32_t motor_wait_evt(uint32_t evt, uint32_t timeout)
 	return f;
 }
 
-int motors_goto_angles(float angles[], size_t size, uint8_t mselect)
+int motor_goto_angles(const float angles[MOTOR_NUM])
 {
 	evt_waiter = osThreadGetId();
 	osThreadFlagsClear(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM);
-	size_t m0 = mselect & MOTOR0_BIT;
-	size_t m1 = mselect & MOTOR1_BIT;
-	size_t m2 = mselect & MOTOR2_BIT;
-	// Checks if the array size is the same as the flags size.
-	if (size != (m0 + m1 + m2)) {
-		return -EINVAL;
+
+	for (enum motor_t m = 0; m < MOTOR_NUM; m++) {
+		prepare_goto(m, angles[m]);
 	}
 
-	int masks[] = { MOTOR0_BIT, MOTOR1_BIT, MOTOR2_BIT };
-	int x = 0;
-
-	for (int i = 0; i < 3; i++) {
-		if (mselect & masks[i]) {
-			motor_goto_angle(angles[x++], masks[i]);
-		}
-	}
 	BSP_L6470_PerformPreparedApplicationCommand(0);
-	BSP_L6470_PerformPreparedApplicationCommand(1);
+	// BSP_L6470_PerformPreparedApplicationCommand(1);
 
-	int32_t f = motor_wait_evt(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM,
-				   MOTOR_TIMEOUT);
+	int32_t f =
+		wait_evt(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM, MOTOR_TIMEOUT);
 	if (f < 0) {
 		return f;
 	}
 
 	if (f & MOTOR_FLAGS_ALARM) {
-		return -1;
+		//TODO: we should maybe return the source of the alarm in error cases
+		return -EIO;
 	}
 
 	return 0;

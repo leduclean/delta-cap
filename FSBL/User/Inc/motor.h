@@ -3,28 +3,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/**
- * @name Motor Bitmask Flags
- * @{
- */
-typedef enum {
-	MOTOR_AXIS_1 = 0,
-	MOTOR_AXIS_2 = 1,
-	MOTOR_AXIS_3 = 2
-} motor_axis_t;
-
-/** @brief Bitmask flag representing Motor 0 (Axis 1). */
-#define MOTOR0_BIT (1 << 0)
-
-/** @brief Bitmask flag representing Motor 1 (Axis 2). */
-#define MOTOR1_BIT (1 << 1)
-
-/** @brief Bitmask flag representing Motor 2 (Axis 2). */
-#define MOTOR2_BIT (1 << 2)
-
-/** @} */
-
-enum motor_t { MOTOR0 = 0, MOTOR1, MOTOR2 };
+enum motor_t {
+	MOTOR0 = 0,
+	// MOTOR1,
+	// MOTOR2,
+	MOTOR_NUM
+};
 
 /**
  * @brief Initialize the motor driver and the L6470 expansion board.
@@ -34,12 +18,11 @@ enum motor_t { MOTOR0 = 0, MOTOR1, MOTOR2 };
 [[nodiscard]] int motor_init(void);
 
 /**
- * @brief Move multiple motor axes to absolute angles simultaneously based on a bitmask of flags.
+ * @brief Move the motors to absolute angles simultaneously.
  *
- * @param angles Pointer to an array of target angles in degrees, ordered by active motors.
- * @param size Number of elements in the angles array (must match the number of active bits in flags).
- * @param mselect Bitmask indicating which motors to move (combination of MOTOR0_BIT, MOTOR1_BIT, MOTOR2_BIT).
- * @return 0 on SUCCESS, or a negative error code (e.g., -EINVAL) on failure.
+ * @param angles Target angle in degrees for each motor, indexed by enum motor_t.
+ * @return 0 on SUCCESS, -EINVAL on invalid mselect, or another negative error code.
+ *
+ * @retval -EIO on Alarm signal from the motor.
  */
-[[nodiscard]] int motors_goto_angles(float angles[], size_t size,
-				     uint8_t mselect);
+[[nodiscard]] int motor_goto_angles(const float angles[MOTOR_NUM]);
