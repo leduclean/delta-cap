@@ -18,7 +18,7 @@
             }
         },
         {
-            "name": "Debug-Ninja",
+            "name": "Ninja",
             "inherits": "default",
             "generator": "Ninja",
             "cacheVariables": {
@@ -40,7 +40,7 @@
         },
         {
             "name": "Ninja",
-            "configurePreset": "Debug-Ninja"
+            "configurePreset": "Ninja"
         },
         {
             "name": "Release",
