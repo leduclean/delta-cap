@@ -33,7 +33,7 @@ int motor_init(void)
 	return 0;
 }
 
-uint32_t motor_angle_to_steps(float target_angle_deg)
+static uint32_t motor_angle_to_steps(float target_angle_deg)
 {
 	uint32_t steps_per_rev =
 		(uint32_t)(FULLSTEP_PER_REVOLUTION * (1 << STEP_SEL));
@@ -44,7 +44,7 @@ uint32_t motor_angle_to_steps(float target_angle_deg)
 	return (uint32_t)absolute_steps;
 }
 
-void motor_goto_angle(enum motor_t motor, float target_angle_deg)
+static void motor_goto_angle(enum motor_t motor, float target_angle_deg)
 {
 	int32_t absolute_steps =
 		(int32_t)motor_angle_to_steps(target_angle_deg);
