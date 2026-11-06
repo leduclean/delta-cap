@@ -18,7 +18,8 @@ enum motor_t {
 [[nodiscard]] int motor_init(void);
 
 /**
- * @brief Move the motors to absolute angles simultaneously.
+ * @brief Moves the motors to absolute angles simultaneously, then sleep waiting for a
+ * response frome the motors.
  *
  * @param angles Target angle in degrees for each motor, indexed by enum motor_t.
  * @return 0 on SUCCESS, -EINVAL on invalid mselect, or another negative error code.

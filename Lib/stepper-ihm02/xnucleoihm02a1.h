@@ -108,7 +108,7 @@
   */
    
 #define EXPANSION_BOARD_SB23_MOUNTED    //!< Tag about the X-NUCLEO-IHM02A1 with SPI nCS linked to SB23 (OP0)
-//#define EXPANSION_BOARD_SB7_MOUNTED     //!< Tag about the X-NUCLEO-IHM02A1 with SPI nCS linked to SB7 (OP1)
+//#define EXPANSION_BOARD_SB7_MOUNTED     //!< TODO: uncomment this tag when 2 board stack: Tag about the X-NUCLEO-IHM02A1 with SPI nCS linked to SB7 (OP1)
 //#define EXPANSION_BOARD_SB8_MOUNTED     //!< Tag about the X-NUCLEO-IHM02A1 with SPI nCS linked to SB8 (OP2)
 //#define EXPANSION_BOARD_SB9_MOUNTED     //!< Tag about the X-NUCLEO-IHM02A1 with SPI nCS linked to SB9 (OP3)
 #if (!defined (EXPANSION_BOARD_SB23_MOUNTED) && !defined (EXPANSION_BOARD_SB7_MOUNTED) &&\

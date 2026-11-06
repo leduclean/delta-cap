@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/param.h>
 
 #include "cmsis_os2.h"
 #include "main.h"
@@ -11,6 +12,11 @@
 #include "microstepping_motor.h"
 #include "stm32n6xx_hal_gpio.h"
 #include "xnucleoihm02a1.h"
+
+#define MOTORS_PER_BOARD \
+	L6470DAISYCHAINSIZE /**< Number of L6470 daisy-chained on one IHM02A1 board. */
+static_assert(MOTOR_NUM <= EXPBRD_MOUNTED_NR * MOTORS_PER_BOARD,
+	      "not enough L6470 boards declared for MOTOR_NUM");
 
 /**
  * @name Motor config constant, should match the init config of each motor.
@@ -26,11 +32,10 @@ int motor_init(void)
 {
 	BSP_L6470_Init();
 	MotorParameterData_t *p = GetMotorParameterInitData();
-	//TODO: check the parameters of the lib
-	for (uint8_t m = 0; m < MOTOR_NUM; m++) {
-		BSP_L6470_Config(BSP_L6470_GetExpansionBoardHandle(m),
-				 p + m * L6470DAISYCHAINSIZE);
-	}
+	BSP_L6470_Config_0(p);
+#if EXPBRD_MOUNTED_NR > 1 /** If we have stacked another board */
+	BSP_L6470_Config_1(p + MOTORS_PER_BOARD);
+#endif
 
 	return 0;
 }
@@ -46,10 +51,16 @@ static uint32_t deg_to_steps(float target_angle_deg)
 	return (uint32_t)absolute_steps;
 }
 
-static void prepare_goto(enum motor_t motor, float target_angle_deg)
+/**
+ * @brief Send a GoTo to the first @p n L6470 of one board.
+ */
+static void board_goto(uint8_t board, const float *angles, uint8_t n)
 {
-	int32_t absolute_steps = (int32_t)deg_to_steps(target_angle_deg);
-	L6470_PrepareGoTo(motor, absolute_steps);
+	for (uint8_t i = 0; i < n; i++) {
+		L6470_PrepareGoTo(i, deg_to_steps(angles[i]));
+	}
+
+	BSP_L6470_PerformPreparedApplicationCommand(board);
 }
 
 /**
@@ -80,12 +91,10 @@ int motor_goto_angles(const float angles[MOTOR_NUM])
 	evt_waiter = osThreadGetId();
 	osThreadFlagsClear(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM);
 
-	for (enum motor_t m = 0; m < MOTOR_NUM; m++) {
-		prepare_goto(m, angles[m]);
+	for (uint8_t m = 0; m < MOTOR_NUM; m += MOTORS_PER_BOARD) {
+		board_goto(m / MOTORS_PER_BOARD, &angles[m],
+			   MIN(MOTOR_NUM - m, MOTORS_PER_BOARD));
 	}
-
-	BSP_L6470_PerformPreparedApplicationCommand(0);
-	// BSP_L6470_PerformPreparedApplicationCommand(1);
 
 	int32_t f =
 		wait_evt(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM, MOTOR_TIMEOUT);
