@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "cmd.h"
+#include "motor.h"
 
 #define MAX_ARGS 5 /**< Max args of a command parsed */
 
@@ -20,6 +21,7 @@ struct cmd {
 /* Forward Declarations */
 static int cmd_help(int argc, char *argv[]);
 static int cmd_goto(int argc, char *argv[]);
+static int cmd_mgoto(int argc, char *argv[]);
 
 /**
  * @brief Command registry.
@@ -31,6 +33,8 @@ static const struct cmd registry[] = {
 	/* f, name, desc, usage */
 	{ cmd_help, "help", "Show all the commands", "help" },
 	{ cmd_goto, "goto", "goto a specific position", "goto <x> <y> <z>" },
+	{ cmd_mgoto, "mgoto", "Send a manual command to the motors",
+	  "mgoto <angle0> <angle1> <angle2>" },
 };
 
 #define REGISTRY_SIZE (sizeof(registry) / sizeof(registry[0]))
@@ -72,6 +76,27 @@ static int cmd_goto(int argc, char *argv[])
 	return 0;
 }
 
+static int cmd_mgoto(int argc, char *argv[])
+{
+	if (argc < 2) {
+		return -EINVAL;
+	}
+
+	char *endptr;
+	float angles[MOTOR_NUM] = {};
+	angles[0] = strtof(argv[1], &endptr);
+	if (*endptr != '\0') {
+		return -EINVAL;
+	}
+
+	int res = motor_goto_angles(angles);
+	if (res < 0) {
+		printf("Motor goto failed with error code %d \n", res);
+		return res;
+	}
+
+	return 0;
+}
 static int parse_line(char *line, char *argv[], int max_args)
 {
 	int argc = 0;

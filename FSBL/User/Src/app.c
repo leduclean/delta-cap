@@ -11,6 +11,7 @@
 #include "console.h"
 #include "display.h"
 #include "main.h"
+#include "motor.h"
 
 const osThreadAttr_t console_task_attr = {
 	.name = "cli",
@@ -50,7 +51,7 @@ static void console_task([[maybe_unused]] void *argument)
 	}
 }
 
-static void ai_task([[maybe_unused]] void *argument)
+[[maybe_unused]] static void ai_task([[maybe_unused]] void *argument)
 {
 	int res = camera_start_nn_pipe();
 	if (res < 0) {
@@ -70,7 +71,7 @@ static void ai_task([[maybe_unused]] void *argument)
 	}
 }
 
-static void display_task([[maybe_unused]] void *argument)
+[[maybe_unused]] static void display_task([[maybe_unused]] void *argument)
 {
 	int res = camera_start_screen_pipe(display_get_bg_buff());
 	if (res < 0) {
@@ -103,13 +104,21 @@ int app_start(void)
 		return res;
 	}
 
-	res = camera_init();
-	if (res < 0) {
-		return res;
-	}
+	// camera/ai disabled to test the motor alone, without the whole camera setup
+	// res = camera_init();
+	// if (res < 0) {
+	// 	return res;
+	// }
 
-	res = ai_init();
+	// res = ai_init();
+	// if (res < 0) {
+	// 	return res;
+	// }
+
+	//TODO: move this in the monitoring task
+	res = motor_init();
 	if (res < 0) {
+		printf("Error during motor init \r\n");
 		return res;
 	}
 
