@@ -117,13 +117,13 @@ int app_start(void)
 		return -EINVAL;
 	}
 
-	if (!osThreadNew(display_task, NULL, &display_task_attr)) {
-		return -EINVAL;
-	}
+	// if (!osThreadNew(display_task, NULL, &display_task_attr)) {
+	// 	return -EINVAL;
+	// }
 
-	if (!osThreadNew(ai_task, NULL, &ai_task_attr)) {
-		return -EINVAL;
-	}
+	// if (!osThreadNew(ai_task, NULL, &ai_task_attr)) {
+	// 	return -EINVAL;
+	// }
 
 	return 0;
 }

@@ -57,11 +57,23 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(STEPPER_CS_N_GPIO_Port, STEPPER_CS_N_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : STEPPER_BUSY_N_Pin STEPPER_FLAG_N_Pin */
-  GPIO_InitStruct.Pin = STEPPER_BUSY_N_Pin|STEPPER_FLAG_N_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure the EXTI line attribute */
+  HAL_EXTI_ConfigLineAttributes(EXTI_LINE_5, EXTI_LINE_SEC);
+
+  /*Configure the EXTI line attribute */
+  HAL_EXTI_ConfigLineAttributes(EXTI_LINE_7, EXTI_LINE_SEC);
+
+  /*Configure GPIO pin : STEPPER_BUSY_N_Pin */
+  GPIO_InitStruct.Pin = STEPPER_BUSY_N_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+  HAL_GPIO_Init(STEPPER_BUSY_N_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : STEPPER_FLAG_N_Pin */
+  GPIO_InitStruct.Pin = STEPPER_FLAG_N_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(STEPPER_FLAG_N_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : STEPPER_RESET_N_Pin */
   GPIO_InitStruct.Pin = STEPPER_RESET_N_Pin;
@@ -90,6 +102,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(STEPPER_CS_N_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(STEPPER_BUSY_N_EXTI_IRQn, 6, 0);
+  HAL_NVIC_EnableIRQ(STEPPER_BUSY_N_EXTI_IRQn);
+
+  HAL_NVIC_SetPriority(STEPPER_FLAG_N_EXTI_IRQn, 6, 0);
+  HAL_NVIC_EnableIRQ(STEPPER_FLAG_N_EXTI_IRQn);
 
 }
 
