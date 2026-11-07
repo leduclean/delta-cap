@@ -3,13 +3,11 @@
 #include <stdint.h>
 #include <sys/param.h>
 
+#include "L6470.h"
 #include "cmsis_os2.h"
 #include "main.h"
-#include "motor.h"
-#include "xnucleoihm02a1_params.h"
-
-#include "L6470.h"
 #include "microstepping_motor.h"
+#include "motor.h"
 #include "stm32n6xx_hal_gpio.h"
 #include "xnucleoihm02a1.h"
 
@@ -19,22 +17,61 @@ static_assert(MOTOR_NUM <= EXPBRD_MOUNTED_NR * MOTORS_PER_BOARD,
 	      "not enough L6470 boards declared for MOTOR_NUM");
 
 /**
- * @name Motor config constant, should match the init config of each motor.
- * @{
+ * @brief Starter L6470 config for the SANMOTION SF2422-10B, same for every arm.
+ *
+ * Electrical values are the course example ones, already run on this motor.
  */
-#define MOTOR_CONFIG_STEP_MODE MICROSTEP_1_4 /**< Micro step mode selection. */
-#define MOTOR_CONFIG_FSTEP_PREV 200 /**< Minimum nb of steps per revolution.  */
-/** @} */
+static const MotorParameterData_t motor_cfg = {
+	/* Motor characteristics */
+	.motorvoltage = 12.0f, /* Must match the power supply voltage */
+	.fullstepsperrevolution = 200, /* See doc for this 1.8 deg/step. */
+
+	/* Driver config */
+	/* Same acc/dec: arms start/stop together. */
+	.acc = 800.0f,
+	.dec = 800.0f,
+	.maxspeed = 400.0f, /* 2 rev/s. */
+	.minspeed = 0.0f,
+
+	.fsspd = 1000.0f, /* Never happens because it is > maxspeed */
+	.kvalhold = 3.06f,
+	.kvalrun = 3.06f,
+	.kvalacc = 3.06f,
+	.kvaldec = 3.06f,
+	.intspeed = 61.52f,
+	.stslp = 392.1569e-6f,
+	.fnslpacc = 643.1372e-6f,
+	.fnslpdec = 643.1372e-6f,
+	.kterm = 0,
+	.ocdth = 3366.0f,
+	.stallth = 3060.0f,
+	.step_sel = MICROSTEP_1_16, /* 3200 steps/rev. */
+	.alarmen = 0xFF,
+	.config = 0x2E88,
+};
 
 static osThreadId_t evt_waiter;
 
 int motor_init(void)
 {
-	BSP_L6470_Init();
-	MotorParameterData_t *p = GetMotorParameterInitData();
-	BSP_L6470_Config_0(p);
+	MotorParameterData_t *cfg = (MotorParameterData_t *)&motor_cfg;
+
+	BSP_L6470_Init(); /* Leaves board 0 selected. */
+	BSP_L6470_Config_0_0(cfg);
+	BSP_L6470_Config_0_1(cfg);
 #if EXPBRD_MOUNTED_NR > 1 /** If we have stacked another board */
-	BSP_L6470_Config_1(p + MOTORS_PER_BOARD);
+	BSP_L6470_Select(BSP_L6470_EXPBRD_ID(1));
+	BSP_L6470_Config_1_0(cfg);
+	BSP_L6470_Config_1_1(cfg);
+#endif
+
+	/* A reset latches UVLO low until GetStatus is read, which holds the
+	 * shared FLAG line low and fakes an alarm on the first goto. */
+	BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(0), 0);
+	BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(0), 1);
+#if EXPBRD_MOUNTED_NR > 1
+	BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(1), 0);
+	BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(1), 1);
 #endif
 
 	return 0;
@@ -42,8 +79,8 @@ int motor_init(void)
 
 static uint32_t deg_to_steps(float target_angle_deg)
 {
-	uint32_t steps_per_rev = (uint32_t)(MOTOR_CONFIG_FSTEP_PREV *
-					    (1 << MOTOR_CONFIG_STEP_MODE));
+	uint32_t steps_per_rev = (uint32_t)motor_cfg.fullstepsperrevolution
+				 << motor_cfg.step_sel;
 
 	float steps_per_deg = (float)steps_per_rev / 360.0f;
 	int32_t absolute_steps = (int32_t)(target_angle_deg * steps_per_deg);
