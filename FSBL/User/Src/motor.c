@@ -147,6 +147,12 @@ int motor_goto_angles(const float angles[MOTOR_NUM])
 	return 0;
 }
 
+bool motor_sw_closed(enum motor_t m)
+{
+	return BSP_L6470_CheckStatusRegisterFlag(m / MOTORS_PER_BOARD,
+						 m % MOTORS_PER_BOARD, SW_F_ID);
+}
+
 /**
  * @brief Weak overload of the external rising interrupt callback.
  *

@@ -1,11 +1,13 @@
 #include <errno.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "cmd.h"
 #include "motor.h"
+#include "xnucleoihm02a1.h"
 
 #define MAX_ARGS 5 /**< Max args of a command parsed */
 
@@ -22,6 +24,7 @@ struct cmd {
 static int cmd_help(int argc, char *argv[]);
 static int cmd_goto(int argc, char *argv[]);
 static int cmd_mgoto(int argc, char *argv[]);
+static int cmd_msw(int argc, char *argv[]);
 
 /**
  * @brief Command registry.
@@ -35,6 +38,9 @@ static const struct cmd registry[] = {
 	{ cmd_goto, "goto", "goto a specific position", "goto <x> <y> <z>" },
 	{ cmd_mgoto, "mgoto", "Send a manual command to the motors",
 	  "mgoto <angle0> <angle1> <angle2>" },
+	{ cmd_msw, "msw", "Wait for a software change on one of the motors.",
+	  "mswwait <motor number>" },
+
 };
 
 #define REGISTRY_SIZE (sizeof(registry) / sizeof(registry[0]))
@@ -91,12 +97,40 @@ static int cmd_mgoto(int argc, char *argv[])
 
 	int res = motor_goto_angles(angles);
 	if (res < 0) {
-		printf("Motor goto failed with error code %d \n", res);
+		printf("Motor goto failed with error code %d, status 0x%04x 0x%04x\r\n",
+		       res, BSP_L6470_GetStatus(0, 0),
+		       BSP_L6470_GetStatus(0, 1));
 		return res;
 	}
 
 	return 0;
 }
+
+static int cmd_msw(int argc, char *argv[])
+{
+	if (argc < 2) {
+		return -EINVAL;
+	}
+	char *endptr;
+	enum motor_t m = strtol(argv[1], &endptr, 10);
+	if (*endptr != '\0') {
+		return -EINVAL;
+	}
+
+	bool current = motor_sw_closed(m);
+	printf("Initial software status: %d \r\n", current);
+	printf("Waiting for a sw change \r\n");
+	for (;;) {
+		bool new = motor_sw_closed(m);
+		if (current != new) {
+			printf("New software status: %d \r\n", new);
+			break;
+		}
+	}
+
+	return 0;
+}
+
 static int parse_line(char *line, char *argv[], int max_args)
 {
 	int argc = 0;

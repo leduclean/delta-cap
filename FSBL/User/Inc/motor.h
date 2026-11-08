@@ -1,5 +1,6 @@
 #pragma once
 
+#include <microstepping_motor.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -27,3 +28,11 @@ enum motor_t {
  * @retval -EIO on Alarm signal from the motor.
  */
 [[nodiscard]] int motor_goto_angles(const float angles[MOTOR_NUM]);
+
+/**
+ * @brief Helper to debug the sw status of one of the motors.
+ *
+ * @param m The motor to check.
+ * @return Weither this is closed or not.
+ */
+bool motor_sw_closed(enum motor_t m);
