@@ -28,10 +28,10 @@ static const MotorParameterData_t motor_cfg = {
 
 	/* Driver config */
 	/* Same acc/dec: arms start/stop together. */
-	.acc = 800.0f,
-	.dec = 800.0f,
+	.acc = 100.0f,
+	.dec = 100.0f,
 	.maxspeed = 400.0f, /* 2 rev/s. */
-	.minspeed = 0.0f,
+	.minspeed = 10.0f,
 
 	.fsspd = 1000.0f, /* Never happens because it is > maxspeed */
 	.kvalhold = 3.06f,
@@ -47,7 +47,7 @@ static const MotorParameterData_t motor_cfg = {
 	.stallth = 3060.0f,
 	.step_sel = MICROSTEP_1_16, /* 3200 steps/rev. */
 	.alarmen = 0xFF,
-	.config = 0x2E88,
+	.config = 0b10111010011000, /* See sL6470_ConfigRegister_t. */
 };
 
 static osThreadId_t evt_waiter;
@@ -113,7 +113,7 @@ static int32_t wait_evt(uint32_t evt, uint32_t timeout)
 
 typedef void (*prepare_func)(uint8_t motor, const void *ctx);
 
-static int run_prepare(prepare_func prep, const void *ctx)
+static int run_prepare(prepare_func prep, const void *ctx, uint32_t timeout)
 {
 	evt_waiter = osThreadGetId();
 	osThreadFlagsClear(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM);
@@ -123,12 +123,17 @@ static int run_prepare(prepare_func prep, const void *ctx)
 		for (uint8_t i = 0; i < n; i++) {
 			prep(i, ctx);
 		}
-		BSP_L6470_PerformPreparedApplicationCommand(m / MOTORS_PER_BOARD);
+		BSP_L6470_PerformPreparedApplicationCommand(m /
+							    MOTORS_PER_BOARD);
 	}
 
-	int32_t f =
-		wait_evt(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM, MOTOR_TIMEOUT);
+	int32_t f = wait_evt(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM, timeout);
 	if (f < 0) {
+		if (f == -ETIMEDOUT) {
+			for (uint8_t m = 0; m < MOTOR_NUM; m++) {
+				BSP_L6470_HardStop(m / MOTORS_PER_BOARD, m);
+			}
+		}
 		return f;
 	}
 
@@ -148,31 +153,39 @@ static void prep_goto(uint8_t m, const void *ctx)
 
 int motor_goto_angles(const float angles[MOTOR_NUM])
 {
-	return run_prepare(prep_goto, angles);
+	return run_prepare(prep_goto, angles, MOTOR_TIMEOUT);
 }
 
-#define MOTOR_GO_UNTIL_SPEED 10 /**< Speed used for the first homing phase. */
+#define MOTOR_GO_UNTIL_STEP_S \
+	100.0f /**< Speed used for the first homing phase. */
 
-static void prep_go_until(uint8_t m, [[maybe_unused]] const void *ctx) {
+static void prep_go_until(uint8_t m, [[maybe_unused]] const void *ctx)
+{
 	//TODO: change the hardcoded min speed.
-	L6470_PrepareGoUntil(m, L6470_ACT_RST_ID, L6470_DIR_FWD_ID, MOTOR_GO_UNTIL_SPEED);
+	L6470_PrepareGoUntil(m, L6470_ACT_RST_ID, L6470_DIR_FWD_ID,
+			     Step_s_2_Speed(MOTOR_GO_UNTIL_STEP_S));
 }
 
-
-static void prep_release_sw(uint8_t m, [[maybe_unused]] const void *ctx) {
+[[maybe_unused]] static void prep_release_sw(uint8_t m,
+					     [[maybe_unused]] const void *ctx)
+{
 	L6470_PrepareReleaseSW(m, L6470_ACT_RST_ID, L6470_DIR_REV_ID);
 }
 
-int motor_go_home(void) {
+int motor_homing(void)
+{
 	int res;
 
-	res = run_prepare(prep_go_until, NULL);
+	res = run_prepare(prep_go_until, NULL, MOTOR_TIMEOUT);
 	if (res < 0) {
 		return res;
 	}
 
-	res = run_prepare(prep_release_sw, NULL);
-	if (res <0 ) {
+	//TODO: Need to set up this timer.
+	osDelay(5 * osKernelGetTickFreq());
+
+	res = run_prepare(prep_release_sw, NULL, MOTOR_TIMEOUT);
+	if (res < 0) {
 		return res;
 	}
 

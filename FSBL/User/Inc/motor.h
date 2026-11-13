@@ -36,7 +36,7 @@ enum motor_t {
 * @return 0 on success, error codes < 0 on error.
 * @retval -EIO on Alarm signal from the motor.
 */
-int motor_go_home(void);
+int motor_homing(void);
 
 /**
  * @brief Helper to debug the sw status of one of the motors.

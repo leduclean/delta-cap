@@ -25,6 +25,7 @@ static int cmd_help(int argc, char *argv[]);
 static int cmd_goto(int argc, char *argv[]);
 static int cmd_mgoto(int argc, char *argv[]);
 static int cmd_msw(int argc, char *argv[]);
+static int cmd_mhome(int argc, char *argv[]);
 
 /**
  * @brief Command registry.
@@ -40,6 +41,7 @@ static const struct cmd registry[] = {
 	  "mgoto <angle0> <angle1> <angle2>" },
 	{ cmd_msw, "msw", "Wait for a software change on one of the motors.",
 	  "mswwait <motor number>" },
+	{ cmd_mhome, "mhome", "Trigger the motor homing.", "mhome" },
 
 };
 
@@ -129,6 +131,22 @@ static int cmd_msw(int argc, char *argv[])
 	}
 
 	return 0;
+}
+
+static int cmd_mhome([[maybe_unused]] int argc, [[maybe_unused]] char *argv[])
+{
+	if (argc < 1) {
+		return -EINVAL;
+	}
+
+	int res = motor_homing();
+	if (res < 0) {
+		printf("Motor homing failed with error code %d, status 0x%04x 0x%04x\r\n",
+		       res, BSP_L6470_GetStatus(0, 0),
+		       BSP_L6470_GetStatus(0, 1));
+	}
+
+	return res;
 }
 
 static int parse_line(char *line, char *argv[], int max_args)
