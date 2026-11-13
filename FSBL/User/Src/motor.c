@@ -89,18 +89,6 @@ static uint32_t deg_to_steps(float target_angle_deg)
 }
 
 /**
- * @brief Send a GoTo to the first @p n L6470 of one board.
- */
-static void board_goto(uint8_t board, const float *angles, uint8_t n)
-{
-	for (uint8_t i = 0; i < n; i++) {
-		L6470_PrepareGoTo(i, deg_to_steps(angles[i]));
-	}
-
-	BSP_L6470_PerformPreparedApplicationCommand(board);
-}
-
-/**
  * @name Motor flags used to signal motor event.
  * @{
  */
@@ -123,14 +111,19 @@ static int32_t wait_evt(uint32_t evt, uint32_t timeout)
 	return f;
 }
 
-int motor_goto_angles(const float angles[MOTOR_NUM])
+typedef void (*prepare_func)(uint8_t motor, const void *ctx);
+
+static int run_prepare(prepare_func prep, const void *ctx)
 {
 	evt_waiter = osThreadGetId();
 	osThreadFlagsClear(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM);
 
 	for (uint8_t m = 0; m < MOTOR_NUM; m += MOTORS_PER_BOARD) {
-		board_goto(m / MOTORS_PER_BOARD, &angles[m],
-			   MIN(MOTOR_NUM - m, MOTORS_PER_BOARD));
+		uint8_t n = MIN(MOTOR_NUM - m, MOTORS_PER_BOARD);
+		for (uint8_t i = 0; i < n; i++) {
+			prep(i, ctx);
+		}
+		BSP_L6470_PerformPreparedApplicationCommand(m / MOTORS_PER_BOARD);
 	}
 
 	int32_t f =
@@ -142,6 +135,45 @@ int motor_goto_angles(const float angles[MOTOR_NUM])
 	if (f & MOTOR_FLAGS_ALARM) {
 		//TODO: we should maybe return the source of the alarm in error cases
 		return -EIO;
+	}
+
+	return 0;
+}
+
+static void prep_goto(uint8_t m, const void *ctx)
+{
+	const float *angles = ctx;
+	L6470_PrepareGoTo(m, deg_to_steps(angles[m]));
+}
+
+int motor_goto_angles(const float angles[MOTOR_NUM])
+{
+	return run_prepare(prep_goto, angles);
+}
+
+#define MOTOR_GO_UNTIL_SPEED 10 /**< Speed used for the first homing phase. */
+
+static void prep_go_until(uint8_t m, [[maybe_unused]] const void *ctx) {
+	//TODO: change the hardcoded min speed.
+	L6470_PrepareGoUntil(m, L6470_ACT_RST_ID, L6470_DIR_FWD_ID, MOTOR_GO_UNTIL_SPEED);
+}
+
+
+static void prep_release_sw(uint8_t m, [[maybe_unused]] const void *ctx) {
+	L6470_PrepareReleaseSW(m, L6470_ACT_RST_ID, L6470_DIR_REV_ID);
+}
+
+int motor_go_home(void) {
+	int res;
+
+	res = run_prepare(prep_go_until, NULL);
+	if (res < 0) {
+		return res;
+	}
+
+	res = run_prepare(prep_release_sw, NULL);
+	if (res <0 ) {
+		return res;
 	}
 
 	return 0;

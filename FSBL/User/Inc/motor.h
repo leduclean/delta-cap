@@ -29,6 +29,15 @@ enum motor_t {
  */
 [[nodiscard]] int motor_goto_angles(const float angles[MOTOR_NUM]);
 
+
+
+/**
+* @brief Perform the homing with external entry detection.
+* @return 0 on success, error codes < 0 on error.
+* @retval -EIO on Alarm signal from the motor.
+*/
+int motor_go_home(void);
+
 /**
  * @brief Helper to debug the sw status of one of the motors.
  *
