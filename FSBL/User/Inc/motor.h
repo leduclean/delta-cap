@@ -4,12 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-enum motor_t {
-	MOTOR0 = 0,
-	// MOTOR1,
-	// MOTOR2,
-	MOTOR_NUM
-};
+enum motor_t { MOTOR0 = 0, MOTOR1, MOTOR2, MOTOR_NUM };
 
 /**
  * @brief Initialize the motor driver and the L6470 expansion board.
@@ -28,8 +23,6 @@ enum motor_t {
  * @retval -EIO on Alarm signal from the motor.
  */
 [[nodiscard]] int motor_goto_angles(const float angles[MOTOR_NUM]);
-
-
 
 /**
 * @brief Perform the homing with external entry detection.

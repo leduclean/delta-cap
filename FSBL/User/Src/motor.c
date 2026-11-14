@@ -55,24 +55,14 @@ static osThreadId_t evt_waiter;
 int motor_init(void)
 {
 	MotorParameterData_t *cfg = (MotorParameterData_t *)&motor_cfg;
-
 	BSP_L6470_Init(); /* Leaves board 0 selected. */
+
 	BSP_L6470_Config_0_0(cfg);
 	BSP_L6470_Config_0_1(cfg);
-#if EXPBRD_MOUNTED_NR > 1 /** If we have stacked another board */
+
 	BSP_L6470_Select(BSP_L6470_EXPBRD_ID(1));
 	BSP_L6470_Config_1_0(cfg);
 	BSP_L6470_Config_1_1(cfg);
-#endif
-
-	/* A reset latches UVLO low until GetStatus is read, which holds the
-	 * shared FLAG line low and fakes an alarm on the first goto. */
-	BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(0), 0);
-	BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(0), 1);
-#if EXPBRD_MOUNTED_NR > 1
-	BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(1), 0);
-	BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(1), 1);
-#endif
 
 	return 0;
 }

@@ -86,15 +86,17 @@ static int cmd_goto(int argc, char *argv[])
 
 static int cmd_mgoto(int argc, char *argv[])
 {
-	if (argc < 2) {
+	if (argc < MOTOR_NUM) {
 		return -EINVAL;
 	}
 
 	char *endptr;
-	float angles[MOTOR_NUM] = {};
-	angles[0] = strtof(argv[1], &endptr);
-	if (*endptr != '\0') {
-		return -EINVAL;
+	float angles[MOTOR_NUM];
+	for (int i = 0; i < MOTOR_NUM; i++) {
+		angles[i] = strtof(argv[i + 1], &endptr);
+		if (*endptr != '\0') {
+			return -EINVAL;
+		}
 	}
 
 	int res = motor_goto_angles(angles);
