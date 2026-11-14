@@ -77,12 +77,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define STEPPER_BUSY_N_Pin GPIO_PIN_5
-#define STEPPER_BUSY_N_GPIO_Port GPIOD
-#define STEPPER_BUSY_N_EXTI_IRQn EXTI5_IRQn
-#define STEPPER_FLAG_N_Pin GPIO_PIN_7
-#define STEPPER_FLAG_N_GPIO_Port GPIOD
-#define STEPPER_FLAG_N_EXTI_IRQn EXTI7_IRQn
+#define STEPPER2_CS_N_Pin GPIO_PIN_10
+#define STEPPER2_CS_N_GPIO_Port GPIOE
+#define STEPPER_FLAG_N_Pin GPIO_PIN_12
+#define STEPPER_FLAG_N_GPIO_Port GPIOC
+#define STEPPER_FLAG_N_EXTI_IRQn EXTI12_IRQn
+#define STEPPER_BUSY_N_Pin GPIO_PIN_2
+#define STEPPER_BUSY_N_GPIO_Port GPIOH
+#define STEPPER_BUSY_N_EXTI_IRQn EXTI2_IRQn
 #define TRACED1_Pin GPIO_PIN_0
 #define TRACED1_GPIO_Port GPIOB
 #define TRACED3_Pin GPIO_PIN_7

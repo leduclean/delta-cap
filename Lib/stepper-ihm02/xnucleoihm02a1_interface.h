@@ -49,8 +49,8 @@
  */
 
 
-#define HSPI                                  hspi5
-extern SPI_HandleTypeDef hspi5;
+#define IHM02_HSPI                                  hspi4
+extern SPI_HandleTypeDef IHM02_HSPI; 
 
 /* GPIO settings for the nSTBY_nRST pins of the L6470 */
 #define L6470_nSTBY_nRST_GPIO_PORT              STEPPER_RESET_N_GPIO_Port                 //!< nSTBY_nRST, GPIO Port
@@ -59,23 +59,23 @@ extern SPI_HandleTypeDef hspi5;
 /* GPIO settings for the nBUSY_SYNC pin of the L6470 */
 #define L6470_nBUSY_SYNC_GPIO_PORT              STEPPER_BUSY_N_GPIO_Port                 //!< nSTBY_nRST, GPIO Port
 #define L6470_nBUSY_SYNC_GPIO_PIN               STEPPER_BUSY_N_Pin            //!< nSTBY_nRST, GPIO Pin
-#define L6470_nBUSY_SYNC_IRQn                   EXTI5_IRQn            //!< nSTBY_nRST, IRQ number
-#define L6470_nBUSY_SYNC_EXTI_IRQHandler        EXTI5_IRQHandler      //!< nSTBY_nRST, IRQ handler name
+#define L6470_nBUSY_SYNC_IRQn                   EXTI2_IRQn            //!< nSTBY_nRST, IRQ number
+#define L6470_nBUSY_SYNC_EXTI_IRQHandler        EXTI2_IRQHandler      //!< nSTBY_nRST, IRQ handler name
 
 /* GPIO settings for the nFLAG pin of the L6470 */
 #define L6470_nFLAG_GPIO_PORT                   STEPPER_FLAG_N_GPIO_Port                 //!< nFLAG, GPIO Port
 #define L6470_nFLAG_GPIO_PIN                    STEPPER_FLAG_N_Pin            //!< nFLAG, GPIO Pin
-#define L6470_nFLAG_IRQn                        EXTI7_IRQn            //!< nFLAG, IRQ number
-#define L6470_nFLAG_EXTI_IRQHandler             EXTI7_IRQHandler      //!< nFLAG, IRQ handler name
+#define L6470_nFLAG_IRQn                        EXTI12_IRQn            //!< nFLAG, IRQ number
+#define L6470_nFLAG_EXTI_IRQHandler             EXTI12_IRQHandler      //!< nFLAG, IRQ handler name
 
 /* GPIO settings for the options about the nCS pins of the L6470 */
-#define L6470_nCS_OP0_GPIO_CLK_ENABLE           RCC_AHB1ENR_GPIOAEN   //!< nCS Option 0, RCC AHB peripheral clock register
+// #define L6470_nCS_OP0_GPIO_CLK_ENABLE           RCC_AHB1ENR_GPIOAEN   //!< nCS Option 0, RCC AHB peripheral clock register
 #define L6470_nCS_OP0_GPIO_PORT                 STEPPER_CS_N_GPIO_Port                 //!< nCS Option 0, GPIO Port
 #define L6470_nCS_OP0_GPIO_PIN                  STEPPER_CS_N_Pin            //!< nCS Option 0, GPIO Pin
+// #define L6470_nCS_OP1_GPIO_CLK_ENABLE           RCC_AHB1ENR_GPIOAEN   //!< nCS Option 1, RCC AHB peripheral clock register
+#define L6470_nCS_OP1_GPIO_PORT                 STEPPER2_CS_N_GPIO_Port                 //!< nCS Option 1, GPIO Port
+#define L6470_nCS_OP1_GPIO_PIN                  STEPPER2_CS_N_Pin           //!< nCS Option 1, GPIO Pin
 #if 0
-#define L6470_nCS_OP1_GPIO_CLK_ENABLE           RCC_AHB1ENR_GPIOAEN   //!< nCS Option 1, RCC AHB peripheral clock register
-#define L6470_nCS_OP1_GPIO_PORT                 GPIOA                 //!< nCS Option 1, GPIO Port
-#define L6470_nCS_OP1_GPIO_PIN                  GPIO_PIN_10           //!< nCS Option 1, GPIO Pin
 #define L6470_nCS_OP2_GPIO_CLK_ENABLE           RCC_AHB1ENR_GPIOBEN   //!< nCS Option 2, RCC AHB peripheral clock register
 #define L6470_nCS_OP2_GPIO_PORT                 GPIOB                 //!< nCS Option 2, GPIO Port
 #define L6470_nCS_OP2_GPIO_PIN                  GPIO_PIN_6            //!< nCS Option 2, GPIO Pin
