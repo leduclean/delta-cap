@@ -1,9 +1,11 @@
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <sys/param.h>
 
 #include "L6470.h"
+#include "L6470_regs.h"
 #include "cmsis_os2.h"
 #include "main.h"
 #include "microstepping_motor.h"
@@ -46,8 +48,11 @@ static const MotorParameterData_t motor_cfg = {
 	.ocdth = 3366.0f,
 	.stallth = 3060.0f,
 	.step_sel = MICROSTEP_1_16, /* 3200 steps/rev. */
-	.alarmen = 0xFF,
-	.config = 0b10111010011000, /* See sL6470_ConfigRegister_t. */
+	.alarmen = L6470_ALARM_EN_ALL,
+	.config = L6470_CONFIG_EXT_CLK | L6470_CONFIG_SW_MODE |
+		  L6470_CONFIG_OC_SD | L6470_CONFIG_POW_SR_110V_US |
+		  L6470_CONFIG_F_PWM_DEC_X1 | L6470_CONFIG_F_PWM_INT_DIV2,
+	/* 0x2E98, PWM 15.6 kHz */
 };
 
 static osThreadId_t evt_waiter;
@@ -101,6 +106,32 @@ static int32_t wait_evt(uint32_t evt, uint32_t timeout)
 	return f;
 }
 
+static void hard_stop_all(void)
+{
+	for (uint8_t m = 0; m < MOTOR_NUM; m++) {
+		BSP_L6470_HardStop(m / MOTORS_PER_BOARD, m);
+	}
+}
+
+static int handle_fault(void)
+{
+	printf("[FAILURE]: Motor Fault \n\r");
+	hard_stop_all();
+
+	for (uint8_t m = 0; m < MOTOR_NUM; m += MOTORS_PER_BOARD) {
+		uint8_t b = m / MOTORS_PER_BOARD;
+		uint8_t n = MIN(MOTOR_NUM - m, MOTORS_PER_BOARD);
+		for (uint8_t i = 0; i < n; i++) {
+			uint16_t status =
+				BSP_L6470_GetStatus(BSP_L6470_EXPBRD_ID(b), i);
+			printf("- Motor %d, board %d has this status: 0b%04b \r\n",
+			       m, b, status);
+		}
+	}
+
+	return -EIO;
+}
+
 typedef void (*prepare_func)(uint8_t motor, const void *ctx);
 
 static int run_prepare(prepare_func prep, const void *ctx, uint32_t timeout)
@@ -119,17 +150,12 @@ static int run_prepare(prepare_func prep, const void *ctx, uint32_t timeout)
 
 	int32_t f = wait_evt(MOTOR_FLAGS_DONE | MOTOR_FLAGS_ALARM, timeout);
 	if (f < 0) {
-		if (f == -ETIMEDOUT) {
-			for (uint8_t m = 0; m < MOTOR_NUM; m++) {
-				BSP_L6470_HardStop(m / MOTORS_PER_BOARD, m);
-			}
-		}
+		hard_stop_all();
 		return f;
 	}
 
 	if (f & MOTOR_FLAGS_ALARM) {
-		//TODO: we should maybe return the source of the alarm in error cases
-		return -EIO;
+		return handle_fault();
 	}
 
 	return 0;
