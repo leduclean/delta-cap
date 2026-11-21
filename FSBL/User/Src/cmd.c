@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "cmd.h"
+#include "magnet.h"
 #include "motor.h"
 #include "xnucleoihm02a1.h"
 
@@ -26,6 +27,8 @@ static int cmd_goto(int argc, char *argv[]);
 static int cmd_mgoto(int argc, char *argv[]);
 static int cmd_msw(int argc, char *argv[]);
 static int cmd_mhome(int argc, char *argv[]);
+static int cmd_take(int argc, char *argv[]);
+static int cmd_release(int argc, char *argv[]);
 
 /**
  * @brief Command registry.
@@ -42,7 +45,9 @@ static const struct cmd registry[] = {
 	{ cmd_msw, "msw", "Wait for a software change on one of the motors.",
 	  "mswwait <motor number>" },
 	{ cmd_mhome, "mhome", "Trigger the motor homing.", "mhome" },
-
+	{ cmd_take, "take", "Take an object with the electro", "take" },
+	{ cmd_release, "release", "Release an object with the electro",
+	  "release" },
 };
 
 #define REGISTRY_SIZE (sizeof(registry) / sizeof(registry[0]))
@@ -149,6 +154,17 @@ static int cmd_mhome([[maybe_unused]] int argc, [[maybe_unused]] char *argv[])
 	}
 
 	return res;
+}
+
+static int cmd_take([[maybe_unused]] int argc, [[maybe_unused]] char *argv[])
+{
+	magnet_take();
+	return 0;
+}
+static int cmd_release([[maybe_unused]] int argc, [[maybe_unused]] char *argv[])
+{
+	magnet_release();
+	return 0;
 }
 
 static int parse_line(char *line, char *argv[], int max_args)
