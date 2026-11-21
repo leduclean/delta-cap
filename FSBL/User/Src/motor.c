@@ -48,7 +48,7 @@ static const MotorParameterData_t motor_cfg = {
 	.ocdth = 3366.0f,
 	.stallth = 3060.0f,
 	.step_sel = MICROSTEP_1_16, /* 3200 steps/rev. */
-	.alarmen = L6470_ALARM_EN_ALL,
+	.alarmen = L6470_ALARM_EN_ALL & ~L6470_ALARM_EN_SW,
 	.config = L6470_CONFIG_EXT_CLK | L6470_CONFIG_SW_MODE |
 		  L6470_CONFIG_OC_SD | L6470_CONFIG_POW_SR_110V_US |
 		  L6470_CONFIG_F_PWM_DEC_X1 | L6470_CONFIG_F_PWM_INT_DIV2,
@@ -196,9 +196,6 @@ int motor_homing(void)
 	if (res < 0) {
 		return res;
 	}
-
-	//TODO: Need to set up this timer.
-	osDelay(5 * osKernelGetTickFreq());
 
 	res = run_prepare(prep_release_sw, NULL, MOTOR_TIMEOUT);
 	if (res < 0) {

@@ -21,5 +21,7 @@
  * @name    ALARM_EN (0x17)
  * @{
  */
-#define L6470_ALARM_EN_ALL            (0xFF)        /**< every alarm pulls FLAG low */
+#define L6470_ALARM_EN_ALL  0xFF   /**< every alarm pulls FLAG low */
+#define L6470_ALARM_EN_SW (1 << 6) /**< A swoftware turn on trigger an alarm */
 /** @} */
+
